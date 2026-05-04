@@ -10,7 +10,7 @@ export const skin = reactive({
   },
 
   cambiaSfondo(sfondo) {
-    this.sfondoURL = "url("+sfondo+")"
+    this.sfondoURL = sfondo
   },
 
   cambiaIcona(icona) {

@@ -49,15 +49,18 @@ router.get('/mio', auth, async (req, res) => {
 
 //Rotta per l'acquisto oggetto
 router.post('/acquista', auth, async (req, res) => {
-     const idUser = req.user.id;
-     const {id_oggetto} = req.body;
+    const idUser = req.user.id;
+    const { id_oggetto } = req.body;
 
-     try {
-        //Inizio transazione
-        await db.query('BEGIN'); //Evita che i soldi scalino se l'inserimento fallisce
+    // Preleviamo un client dedicato dal pool
+    const client = await db.pool.connect();
 
-        //Controlliamo se l'utente ha già l'oggetto
-        const inPossesso = await db.query(
+    try {
+        // Inizio transazione usando il nostro client specifico
+        await client.query('BEGIN'); 
+
+        // Controlliamo se l'utente ha già l'oggetto
+        const inPossesso = await client.query(
             'SELECT 1 FROM inventario WHERE id_utente = $1 AND id_oggetto = $2',
             [idUser, id_oggetto]
         );
@@ -66,9 +69,9 @@ router.post('/acquista', auth, async (req, res) => {
             throw new Error("Possiedi già questo oggetto!");
         }
 
-        //Prendiamo il prezzo dell'oggetto e il saldo dell'utente
-        const infoOggetto = await db.query('SELECT prezzo FROM negozio WHERE id_oggetto = $1', [id_oggetto]);
-        const infoUser = await db.query('SELECT valuta FROM utenti WHERE id_utente = $1', [idUser]);
+        // Prendiamo il prezzo dell'oggetto e il saldo dell'utente
+        const infoOggetto = await client.query('SELECT prezzo FROM negozio WHERE id_oggetto = $1', [id_oggetto]);
+        const infoUser = await client.query('SELECT valuta FROM utenti WHERE id_utente = $1', [idUser]);
 
         if (infoOggetto.rows.length === 0) throw new Error("Oggetto non trovato");
 
@@ -79,25 +82,28 @@ router.post('/acquista', auth, async (req, res) => {
             throw new Error("Saldo insufficiente!");
         }
 
-        //Scaliamo dal saldo
-        await db.query('UPDATE utenti SET valuta = valuta - $1 WHERE id_utente = $2', [prezzo, idUser]);
+        // Scaliamo dal saldo
+        await client.query('UPDATE utenti SET valuta = valuta - $1 WHERE id_utente = $2', [prezzo, idUser]);
 
-        //Aggiungiamo all'inventario
-        await db.query('INSERT INTO inventario (id_utente, id_oggetto) VALUES ($1, $2)', [idUser, id_oggetto]);
+        // Aggiungiamo all'inventario
+        await client.query('INSERT INTO inventario (id_utente, id_oggetto) VALUES ($1, $2)', [idUser, id_oggetto]);
 
-        //Fine transazione
-        await db.query('COMMIT');
+        // Fine transazione: salviamo tutto
+        await client.query('COMMIT');
 
         res.json({
-           success: true,
-           message: "Acquisto avvenuto con successo!"
+            success: true,
+            message: "Acquisto avvenuto con successo!"
         });
 
-     } catch (err) {
-         await db.query('ROLLBACK'); //Ferma tutto se qualcosa va storto
-         res.status(400).json({ success: false, error: err.message });
-     }
-
+    } catch (err) {
+        // Se qualcosa va storto, annulliamo tutto
+        await client.query('ROLLBACK'); 
+        res.status(400).json({ success: false, error: err.message });
+    } finally {
+        // Liberiamo il client per farlo usare da altri
+        client.release();
+    }
 });
 
 module.exports = router;

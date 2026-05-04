@@ -1,6 +1,7 @@
 <script setup>
   import { ref, onMounted, computed} from 'vue'
-  import { skin } from "../../ambiente.js"
+  import { skin, sessione } from "../../ambiente.js"
+  const API_URL = import.meta.env.VITE_SOCKET_URL;
 
   const listaOggetti=ref([])
   const listaAcquisti=ref([])   //contiene gli id di tutti gli item acquistati, di tali item non verrà visualizzato il prezzo ma solo "ACQUISTATO"
@@ -12,50 +13,96 @@
   
   const caricaOggettiAcquistati = async () => {
     try {
-      const response = await fetch("/api/shop/oggetti")   //da cambiare quando ci sarà la api che restituisce gli item acquistati dall'utente (da usare anche nell'inventario)
-      if (!response.ok) throw new Error('Errore nel caricamento')
-      const dati = await response.json()
-      listaAcquisti.value = dati.items.map(item => item.id_oggetto)
-      console.log("Oggetti Acquistati caricati correttamente:",listaAcquisti.value)
+      // Recuperiamo il token di sicurezza dal disco
+      const token = localStorage.getItem('token_campo_minato');
+      if (!token) return;
+
+      // Chiamiamo la rotta corretta passando il token nell'intestazione
+      const response = await fetch(`${API_URL}/api/shop/mio`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) throw new Error('Errore nel caricamento inventario');
+      
+      const dati = await response.json();
+      
+      // Il server ci risponde con un array "inventario"
+      listaAcquisti.value = dati.inventario.map(item => item.id_oggetto);
+      console.log("Oggetti Acquistati caricati correttamente:", listaAcquisti.value);
     } catch (err) {
-      errore.value = err.message
-      console.error(err)
+      errore.value = err.message;
+      console.error(err);
     }
   }
 
   const caricaShop = async () => {
     try {
-      const response = await fetch('/api/shop/oggetti')
-      if (!response.ok) throw new Error('Errore nel caricamento')
+      const response = await fetch(`${API_URL}/api/shop/oggetti`)
+      if (!response.ok) throw new Error('Errore nel caricamento shop')
       const dati = await response.json()
       listaOggetti.value = dati.items
-      console.log("Oggetti caricati correttamente:",listaOggetti.value)
+      console.log("Oggetti caricati correttamente:", listaOggetti.value)
     } catch (err) {
       errore.value = err.message
       console.error(err)
     }
   }
 
-  const effettuaAcquisto = (item) => {
+  const effettuaAcquisto = async (item) => {
+    // Controllo di sicurezza rapido lato Client
+    if (sessione.utente.valuta < item.prezzo) {
+        alert("Non hai abbastanza monete per acquistare questo oggetto!");
+        return;
+    }
 
-    /*
+    try {
+        const token = localStorage.getItem('token_campo_minato');
+        
+        // Chiamata POST al database
+        const response = await fetch(`${API_URL}/api/shop/acquista`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ id_oggetto: item.id_oggetto })
+        });
 
-    TODO: Aggiungere qui logica di acquisto
+        const dati = await response.json();
 
-    */
+        if (response.ok) {
+            // L'acquisto è andato a buon fine nel DB
+            
+            // Aggiungiamo l'oggetto alla lista 
+            listaAcquisti.value.push(item.id_oggetto);
+            
+            // Scaliamo i soldi in tempo reale dalla UI e salviamo in locale
+            sessione.utente.valuta -= item.prezzo;
+            sessione.setUtente(sessione.utente); 
 
-    //Per testare la visualizzazione di ciò che si è comprato (funzione che verrà spostata dell'inventario)
-    //le icone non funzionano perché non sono collegate al profilo
-    if(item.tipo=="tema") skin.cambiaTema(item.asset_url);
-    else if (item.tipo=="sfondo") skin.cambiaSfondo(item.asset_url);
-    else if (item.tipo=="icona") skin.cambiaIcona(item.asset_url);
+            // Equipaggiamo subito l'oggetto
+            if (item.tipo == "tema") skin.cambiaTema(item.asset_url);
+            else if (item.tipo == "sfondo") skin.cambiaSfondo(`url('${item.asset_url}')`);
+            else if (item.tipo == "icona") skin.cambiaIcona(item.asset_url);
 
-    listaAcquisti.value.push(item.id_oggetto)    //se l'oggetto è stato acquistato correttamente allora lo aggiunge alla lista di id di item acquistati
-    console.log("Oggetto Acquistato:",item)
+            alert("Acquisto completato con successo!");
+        } else {
+            // Se il server ha bloccato l'acquisto
+            alert(dati.error || "Errore durante l'acquisto.");
+        }
+    } catch (err) {
+        console.error("Errore di rete durante l'acquisto:", err);
+        alert("Impossibile contattare il server.");
+    }
   }
 
-  onMounted(caricaShop)
-  //onMounted(caricaOggettiAcquistati)      //per caricare la lista degli oggetti acquistati (NOTA: al momento carica la lista di tutti gli item)
+  // Carichiamo tutto all'avvio
+  onMounted(() => {
+      caricaShop();
+      if (sessione.utente) {
+          caricaOggettiAcquistati();
+      }
+  });
 </script>
 
 <template>
@@ -63,7 +110,8 @@
     <div id="finestra_shop" class="finestra">
 
       <div id="div_soldi">
-        <label>Saldo disponibile : 10000 💰</label>   <!--da recuperare soldi dell'utente-->
+        <!-- Controlla se l'utente esiste, altrimenti mostra 0 -->
+        <label>Saldo disponibile : {{ sessione.utente ? sessione.utente.valuta : 0 }} 💰</label>
       </div>
 
       <div id="div_temi">

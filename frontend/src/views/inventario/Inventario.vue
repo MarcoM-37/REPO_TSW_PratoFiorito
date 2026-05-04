@@ -1,6 +1,7 @@
 <script setup>
   import { ref, onMounted, computed} from 'vue'
-  import { skin } from "../../ambiente.js"
+  import { skin, sessione } from "../../ambiente.js"
+  const API_URL = import.meta.env.VITE_SOCKET_URL;
 
   const listaAcquisti=ref([])
   const errore = ref(null)
@@ -11,11 +12,24 @@
   
   const caricaOggettiAcquistati = async () => {
     try {
-      const response = await fetch('/api/shop/oggetti')   //da cambiare quando ci sarà la api che restituisce gli item acquistati dall'utente
-      if (!response.ok) throw new Error('Errore nel caricamento')
+      // Recuperiamo il token di sicurezza
+      const token = localStorage.getItem('token_campo_minato');
+      
+      // Se l'utente non è loggato, blocchiamo la funzione
+      if (!token || !sessione.utente) return;
+
+      // Chiamiamo la rotta passando il token per farci riconoscere
+      const response = await fetch(`${API_URL}/api/shop/mio`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) throw new Error('Errore nel caricamento dell\'inventario')
+      
       const dati = await response.json()
-      listaAcquisti.value = dati.items
-      console.log("Oggetti caricati correttamente:",listaAcquisti.value)
+      
+      // Il server di auth.js ci risponde con "inventario"
+      listaAcquisti.value = dati.inventario
+      console.log("Inventario personale caricato correttamente:", listaAcquisti.value)
     } catch (err) {
       errore.value = err.message
       console.error(err)
@@ -24,7 +38,7 @@
 
   const attivaOggetto = (item) => {
     if(item.tipo=="tema") skin.cambiaTema(item.asset_url);
-    else if (item.tipo=="sfondo") skin.cambiaSfondo(item.asset_url);
+    else if (item.tipo=="sfondo") skin.cambiaSfondo(`url('${item.asset_url}')`);
     else if (item.tipo=="icona") skin.cambiaIcona(item.asset_url);
     console.log("Oggetto Attivato:",item)
   }
