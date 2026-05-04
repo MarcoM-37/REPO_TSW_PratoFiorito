@@ -1,6 +1,6 @@
 <script setup>
   import { ref, onMounted, computed} from 'vue'
-  import { skin, sessione } from "../../ambiente.js"
+  import { skin, sessione, notifica } from "../../ambiente.js"
   const API_URL = import.meta.env.VITE_SOCKET_URL;
 
   const listaAcquisti=ref([])
@@ -40,7 +40,7 @@
     if(item.tipo=="tema") skin.cambiaTema(item.asset_url);
     else if (item.tipo=="sfondo") skin.cambiaSfondo(`url('${item.asset_url}')`);
     else if (item.tipo=="icona") skin.cambiaIcona(item.asset_url);
-    console.log("Oggetto Attivato:",item)
+    notifica.mostra(`Hai equipaggiato: ${item.nome}`);
   }
 
   onMounted(caricaOggettiAcquistati)      //per caricare la lista degli oggetti acquistati (NOTA: al momento carica la lista di tutti gli item)
@@ -57,7 +57,7 @@
             <div class="anteprima" 
               :style="{ backgroundColor: '#42b9af' }" 
               :class="{'selezionato': skin.temaPrincipale === '#42b9af'}"
-              @click="attivaOggetto({id:'tema_base',tipo:'tema',asset_url:'#42b9af'})">
+              @click="attivaOggetto({id:'tema_base', tipo:'tema', nome:'Verde Persiano', asset_url:'#42b9af'})">
             </div>
             <span>Verde Persiano</span>
             <span>(BASE)</span>
@@ -83,7 +83,7 @@
                 backgroundPosition: 'center'
               }"
               :class="{'selezionato': skin.sfondoURL.includes('sfondo_base.jpg')}"
-              @click="attivaOggetto({id:'sfondo_base',tipo:'sfondo',asset_url:'/pattern/sfondo_base.jpg'})">
+              @click="attivaOggetto({id:'sfondo_base', tipo:'sfondo', nome:'Mattoncini Grigi', asset_url:'/pattern/sfondo_base.jpg'})">
             </div>
             <span>Mattoncini Grigi</span>
             <span>(BASE)</span>
@@ -108,7 +108,7 @@
           <div class="slot_oggetto" id="icona_base">
             <div class="anteprima anteprima_icone" 
               :class="{'selezionato': skin.icona === '🎭'}"
-              @click="attivaOggetto({id:'icona_base',tipo:'icona',asset_url:'🎭'})">
+              @click="attivaOggetto({id:'icona_base', tipo:'icona', nome:'Maschere', asset_url:'🎭'})">
               🎭
             </div>
             <span>Maschere</span>
@@ -146,8 +146,9 @@
 
   .riga_oggetti {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     overflow-x: auto;
+    align-items: stretch;
     scrollbar-color : color-mix(in srgb, var(--bg-color), black 50%) color-mix(in srgb, var(--bg-color), white 20%);
     margin-bottom : 2dvh;
     padding-bottom: 2dvh;
@@ -155,14 +156,22 @@
 
   .slot_oggetto {
     width: 7dvw;
-    min-width: 90px;
+    min-width: 140px;
     display: flex;
     flex-direction: column;
-    justify-content: top;
     align-items: center;
     flex-shrink: 0;
     margin-top:10px;
+    height: auto;
   }
+
+  .slot_oggetto > span {
+    text-align: center;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
   .anteprima {
     width: 80px;
     height: 80px;
@@ -172,7 +181,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .anteprima:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
 
   .anteprima_icone {

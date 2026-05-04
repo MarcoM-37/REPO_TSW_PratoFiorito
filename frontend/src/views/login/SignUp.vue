@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { sessione } from '../../ambiente.js';
+import { sessione, notifica } from '../../ambiente.js';
 
 // Recupera l'indirizzo (locale o online) dal file .env
 const API_URL = import.meta.env.VITE_SOCKET_URL;
@@ -21,7 +21,7 @@ const confermaPassword = ref('');
 const gestisciSignup = async () => {
   // 1. Controllo validità password lato client
   if (password.value !== confermaPassword.value) {
-    alert("ERRORE: Le password non combaciano");
+    notifica.mostra("ERRORE: Le password non combaciano");
     return false; // Interrompiamo l'esecuzione qui
   }
 
@@ -46,11 +46,11 @@ const gestisciSignup = async () => {
       router.push("/");
     } else {
       // 4. Gestione errori forniti dal backend
-      alert(dati.error || "Errore sconosciuto durante la registrazione");
+      notifica.mostra(dati.error || "Errore sconosciuto durante la registrazione");
     }
   } catch (err) {
     console.error("Errore di connessione:", err);
-    alert("Impossibile connettersi al server. Riprova più tardi.");
+    notifica.mostra("Impossibile connettersi al server. Riprova più tardi.");
   }
 };
 </script>

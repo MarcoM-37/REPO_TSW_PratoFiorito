@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { sessione } from '../../ambiente.js';
+import { sessione, notifica } from '../../ambiente.js';
 
 // Recupera l'indirizzo (locale o online) dal file .env
 const API_URL = import.meta.env.VITE_SOCKET_URL;
@@ -35,11 +35,11 @@ const gestisciLogin = async () => {
       router.push("/");
     } else {
       // Se fallisce, usiamo l'errore del backend o un messaggio generico
-      alert(dati.error || "Errore sconosciuto durante il login");
+      notifica.mostra(dati.error || "Errore sconosciuto durante il login");
     }
   } catch (err) {
     console.error("Errore di connessione:", err);
-    alert("Impossibile connettersi al server.");
+    notifica.mostra("Impossibile connettersi al server.");
   }
 };
 
@@ -62,7 +62,7 @@ const gestisciLogin = async () => {
         </div>
 
         <div id="div_bottoni">
-          <button @click="VaiSignUp">Non hai un account? Registrati</button>  
+          <button type="button" @click="VaiSignUp">Non hai un account? Registrati</button>  
         
           <button type="submit">Accedi</button>
         </div>

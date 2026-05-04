@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { skin } from '../../ambiente.js';
 // Importiamo la connessione al server WebSocket precedentemente inizializzata
 import { socket } from '../../socket.js';
-import { sessione } from '../../ambiente.js'
+import { sessione, notifica } from '../../ambiente.js'
 
 // Inizializzazione routing
 const route = useRoute();
@@ -89,7 +89,7 @@ onMounted(() => {
   
   // Caso A: La stanza non esiste o è piena
   socket.on('errore_accesso', (messaggio) => {
-    alert(messaggio);
+    notifica.mostra(messaggio);
     router.push('/'); // Reindirizzamento forzato alla home page
   });
 

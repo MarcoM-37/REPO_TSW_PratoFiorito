@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { sessione } from '../ambiente.js'
+import { sessione, notifica } from '../ambiente.js'
 import { socket } from '../socket.js';
 
 const router = useRouter();
@@ -83,7 +83,7 @@ const UniscitiPartita = () => {
     // Navighiamo verso la stanza richiesta, specificando al server che non dobbiamo crearla
     router.push({ path: "/partita/" + codiceStanza.value, query: { azione: 'unisciti' } });
   } else {
-    alert("Inserisci il codice della stanza!");
+    notifica.mostra("Inserisci il codice della stanza!");
   }
 };
 

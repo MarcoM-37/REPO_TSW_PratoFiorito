@@ -1,20 +1,37 @@
 import { reactive } from 'vue'
 
+// Recuperiamo l'aspetto salvato dal disco (se esiste)
+const skinSalvata = localStorage.getItem('skin_campo_minato') 
+  ? JSON.parse(localStorage.getItem('skin_campo_minato')) 
+  : null;
+
 export const skin = reactive({
-  temaPrincipale: '#42b9af',  //base: #42b9af
-  sfondoURL: "url('/pattern/sfondo_base.jpg')",
-  icona : "🎭",
+  temaPrincipale: skinSalvata?.tema || '#42b9af',  
+  sfondoURL: skinSalvata?.sfondo || "url('/pattern/sfondo_base.jpg')",
+  icona : skinSalvata?.icona || "🎭",
   
+  // Funzione interna per scrivere sul disco rigido
+  salvaSuDisco() {
+    localStorage.setItem('skin_campo_minato', JSON.stringify({
+      tema: this.temaPrincipale,
+      sfondo: this.sfondoURL,
+      icona: this.icona
+    }));
+  },
+
   cambiaTema(tema) {
-    this.temaPrincipale = tema
+    this.temaPrincipale = tema;
+    this.salvaSuDisco(); // Salviamo al volo
   },
 
   cambiaSfondo(sfondo) {
-    this.sfondoURL = sfondo
+    this.sfondoURL = sfondo;
+    this.salvaSuDisco();
   },
 
   cambiaIcona(icona) {
-    this.icona = icona
+    this.icona = icona;
+    this.salvaSuDisco();
   }
 })
 
@@ -41,5 +58,20 @@ export const sessione = reactive({
     // Cancella dal disco rigido
     localStorage.removeItem('utente_campo_minato');
     localStorage.removeItem('token_campo_minato');
+  }
+})
+
+export const notifica = reactive({
+  messaggio: '',
+  visibile: false,
+  
+  mostra(msg) {
+    this.messaggio = msg;
+    this.visibile = true;
+  },
+  
+  chiudi() {
+    this.visibile = false;
+    this.messaggio = '';
   }
 })
