@@ -1,79 +1,82 @@
 import { reactive } from 'vue'
 
 // Recuperiamo l'aspetto salvato dal disco (se esiste)
-const skinSalvata = localStorage.getItem('skin_campo_minato') 
-  ? JSON.parse(localStorage.getItem('skin_campo_minato')) 
-  : null;
+const skinSalvata = localStorage.getItem('skin_campo_minato')
+  ? JSON.parse(localStorage.getItem('skin_campo_minato'))
+  : null
 
 export const skin = reactive({
-  temaPrincipale: skinSalvata?.tema || '#42b9af',  
+  temaPrincipale: skinSalvata?.tema || '#42b9af',
   sfondoURL: skinSalvata?.sfondo || "url('/pattern/sfondo_base.jpg')",
-  icona : skinSalvata?.icona || "🎭",
-  
+  icona: skinSalvata?.icona || '🎭',
+
   // Funzione interna per scrivere sul disco rigido
   salvaSuDisco() {
-    localStorage.setItem('skin_campo_minato', JSON.stringify({
-      tema: this.temaPrincipale,
-      sfondo: this.sfondoURL,
-      icona: this.icona
-    }));
+    localStorage.setItem(
+      'skin_campo_minato',
+      JSON.stringify({
+        tema: this.temaPrincipale,
+        sfondo: this.sfondoURL,
+        icona: this.icona,
+      }),
+    )
   },
 
   cambiaTema(tema) {
-    this.temaPrincipale = tema;
-    this.salvaSuDisco(); // Salviamo al volo
+    this.temaPrincipale = tema
+    this.salvaSuDisco() // Salviamo al volo
   },
 
   cambiaSfondo(sfondo) {
-    this.sfondoURL = sfondo;
-    this.salvaSuDisco();
+    this.sfondoURL = sfondo
+    this.salvaSuDisco()
   },
 
   cambiaIcona(icona) {
-    this.icona = icona;
-    this.salvaSuDisco();
-  }
+    this.icona = icona
+    this.salvaSuDisco()
+  },
 })
 
 // Funzione di supporto per leggere il LocalStorage all'avvio
-const utenteSalvato = localStorage.getItem('utente_campo_minato') 
-  ? JSON.parse(localStorage.getItem('utente_campo_minato')) 
-  : null;
+const utenteSalvato = localStorage.getItem('utente_campo_minato')
+  ? JSON.parse(localStorage.getItem('utente_campo_minato'))
+  : null
 
 export const sessione = reactive({
   // Inizializza con i dati del disco (se ci sono) invece che sempre con null
-  utente: utenteSalvato, 
-  
-  setUtente(dati) { 
+  utente: utenteSalvato,
+
+  setUtente(dati) {
     if (dati && dati.id && !dati.id_utente) {
-      dati.id_utente = dati.id;
+      dati.id_utente = dati.id
     }
-    this.utente = dati;
+    this.utente = dati
     // Salva nel disco rigido del browser
-    localStorage.setItem('utente_campo_minato', JSON.stringify(dati));
+    localStorage.setItem('utente_campo_minato', JSON.stringify(dati))
   },
-  
-  logout() { 
-    this.utente = null;
+
+  logout() {
+    this.utente = null
     // Cancella dal disco rigido
-    localStorage.removeItem('utente_campo_minato');
-    localStorage.removeItem('token_campo_minato');
-  }
+    localStorage.removeItem('utente_campo_minato')
+    localStorage.removeItem('token_campo_minato')
+  },
 })
 
 export const notifica = reactive({
   messaggio: '',
   visibile: false,
-  
+
   mostra(msg) {
-    this.messaggio = msg;
-    this.visibile = true;
+    this.messaggio = msg
+    this.visibile = true
   },
-  
+
   chiudi() {
-    this.visibile = false;
-    this.messaggio = '';
-  }
+    this.visibile = false
+    this.messaggio = ''
+  },
 })
 
 // Popup per gli obiettivi
@@ -82,22 +85,22 @@ export const toast = reactive({
   descrizione: '',
   visibile: false,
   timeout: null,
-  
+
   mostra(tit, desc) {
-    this.titolo = tit;
-    this.descrizione = desc;
-    this.visibile = true;
-    
+    this.titolo = tit
+    this.descrizione = desc
+    this.visibile = true
+
     // Se c'era già un toast, resettiamo il timer
-    if (this.timeout) clearTimeout(this.timeout);
-    
+    if (this.timeout) clearTimeout(this.timeout)
+
     // Scompare da solo dopo 5 secondi
     this.timeout = setTimeout(() => {
-      this.chiudi();
-    }, 5000);
+      this.chiudi()
+    }, 5000)
   },
-  
+
   chiudi() {
-    this.visibile = false;
-  }
+    this.visibile = false
+  },
 })

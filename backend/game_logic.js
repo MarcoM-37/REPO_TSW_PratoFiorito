@@ -10,7 +10,7 @@ function generateEmptyGrid(width, height) {
         isMine: false,
         isRevealed: false,
         isFlagged: false,
-        adjacentMines: 0
+        adjacentMines: 0,
       });
     }
     grid.push(row);
@@ -30,8 +30,11 @@ function placeMines(grid, totalMines, firstClickX, firstClickY) {
 
     if (grid[randY][randX].isMine) continue;
 
-    if (Math.abs(randX - firstClickX) <= 1 && Math.abs(randY - firstClickY) <= 1) {
-        continue; 
+    if (
+      Math.abs(randX - firstClickX) <= 1 &&
+      Math.abs(randY - firstClickY) <= 1
+    ) {
+      continue;
     }
 
     grid[randY][randX].isMine = true;
@@ -44,20 +47,25 @@ function calculateNumbers(grid) {
   const height = grid.length;
   const width = grid[0].length;
   const directions = [
-    [-1, -1], [-1, 0], [-1, 1],
-    [ 0, -1],          [ 0, 1],
-    [ 1, -1], [ 1, 0], [ 1, 1]
+    [-1, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, -1],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
   ];
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (grid[y][x].isMine) continue; // Salta se è una mina
-      
+
       let count = 0;
       for (let dir of directions) {
         let checkY = y + dir[0];
         let checkX = x + dir[1];
-        
+
         if (checkY >= 0 && checkY < height && checkX >= 0 && checkX < width) {
           if (grid[checkY][checkX].isMine) {
             count++;
@@ -74,9 +82,14 @@ function revealCell(grid, startX, startY) {
   const height = grid.length;
   const width = grid[0].length;
   const directions = [
-    [-1, -1], [-1, 0], [-1, 1],
-    [ 0, -1],          [ 0, 1],
-    [ 1, -1], [ 1, 0], [ 1, 1]
+    [-1, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, -1],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
   ];
 
   let stack = [[startY, startX]];
@@ -95,7 +108,7 @@ function revealCell(grid, startX, startY) {
         let nY = currY + dir[0];
         let nX = currX + dir[1];
         if (nY >= 0 && nY < height && nX >= 0 && nX < width) {
-           stack.push([nY, nX]);
+          stack.push([nY, nX]);
         }
       }
     }
@@ -105,11 +118,11 @@ function revealCell(grid, startX, startY) {
 // Mette o toglie una bandierina su una cella coperta
 function toggleFlag(grid, x, y) {
   let cell = grid[y][x];
-  
+
   // Non si può mettere una bandierina su una cella già scoperta
   if (!cell.isRevealed) {
     // Inverte lo stato: se era false diventa true, se era true diventa false
-    cell.isFlagged = !cell.isFlagged; 
+    cell.isFlagged = !cell.isFlagged;
   }
 }
 
@@ -129,9 +142,9 @@ function checkWin(grid, totalMines) {
   }
 
   const totalCells = width * height;
-  
+
   // Ritorna 'true' se le celle scoperte sono tutte quelle senza mine
-  return revealedCount === (totalCells - totalMines);
+  return revealedCount === totalCells - totalMines;
 }
 
 // Rivela tutte le mine sulla griglia (da usare al Game Over)
@@ -147,11 +160,14 @@ function revealAllMines(grid) {
 
 // Funzione di supporto
 const contaCelleScoperte = (grid) => {
-    let count = 0;
-    grid.forEach(row => row.forEach(cell => { if(cell.isRevealed) count++; }));
-    return count;
+  let count = 0;
+  grid.forEach((row) =>
+    row.forEach((cell) => {
+      if (cell.isRevealed) count++;
+    }),
+  );
+  return count;
 };
-
 
 module.exports = {
   generateEmptyGrid,
@@ -161,5 +177,5 @@ module.exports = {
   toggleFlag,
   checkWin,
   revealAllMines,
-  contaCelleScoperte
+  contaCelleScoperte,
 };

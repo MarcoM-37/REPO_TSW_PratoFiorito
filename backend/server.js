@@ -1,120 +1,132 @@
-const db = require('./db/index');
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const bcrypt = require('bcrypt'); // Libreria per la sicurezza delle password
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
+const db = require("./db/index");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
+const bcrypt = require("bcrypt"); // Libreria per la sicurezza delle password
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
 // Importiamo il motore di gioco
-const gameLogic = require('./game_logic'); 
+const gameLogic = require("./game_logic");
 // Importiamo il middleware
-const authMidWare = require('./middleware/auth');
+const authMidWare = require("./middleware/auth");
 
 const app = express();
 
 const corsOptions = {
-    origin: ['https://minesweepermmo.netlify.app', 'http://localhost:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Aggiungiamo esplicitamente OPTIONS
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'] // Necessario se invii JSON!
+  origin: ["https://minesweepermmo.netlify.app", "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Aggiungiamo esplicitamente OPTIONS
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"], // Necessario se invii JSON!
 };
 
 const server = http.createServer(app);
 
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    
-    // Accettiamo dinamicamente chiunque ci stia chiamando (Netlify, Localhost, ecc.)
-    if (origin) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+  // Accettiamo dinamicamente chiunque ci stia chiamando (Netlify, Localhost, ecc.)
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
 
-    next();
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  next();
 });
 // Permette a express di leggere il corpo delle richieste POST (JSON)
 app.use(express.json());
 // Dice a Express di servire i file della cartella frontend
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 const io = new Server(server, {
-  cors: corsOptions
+  cors: corsOptions,
 });
 
-//Serve un "middleware" per le socket 
+//Serve un "middleware" per le socket
 io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("Autenticazione richiesta"));
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error("Autenticazione richiesta"));
 
-    try {
-        const ver = jwt.verify(token, process.env.JWT_SECRET);
-        socket.user = ver; //Salviamo l'id nel socket
-        next(); 
-    } catch (err) {
-        next(new Error("Token non valido"));
-    }
-
+  try {
+    const ver = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = ver; //Salviamo l'id nel socket
+    next();
+  } catch (err) {
+    next(new Error("Token non valido"));
+  }
 });
 
 // --- LOGICA SOCKET.IO (GIOCO) ---
 
 // Questa variabile terrà in memoria (RAM) lo stato di tutte le partite in corso.
-const activeGames = {}; 
+const activeGames = {};
 
 // Rotte per l'autenticazione
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
 
-const statsRoutes = require('./routes/stats');
-app.use('/api/stats', statsRoutes);
+const statsRoutes = require("./routes/stats");
+app.use("/api/stats", statsRoutes);
 
 // Rotte per lo shop
-const shopRoutes = require('./routes/shop');
-app.use('/api/shop', shopRoutes);
+const shopRoutes = require("./routes/shop");
+app.use("/api/shop", shopRoutes);
 
 // Funzione helper per salvare i progressi (Punti, Bandierine, Tempo)
 const salvaProgressiGiocatore = async (idPartita, idUtente) => {
-    const partita = activeGames[idPartita];
-    if (partita && partita.giocatori[idUtente]) {
-        const datiGioc = partita.giocatori[idUtente];
-        
-        try {
-            let tempoPassato = 0;
-            if (datiGioc.timestampIngresso) {
-                tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
-            }
+  const partita = activeGames[idPartita];
+  if (partita && partita.giocatori[idUtente]) {
+    const datiGioc = partita.giocatori[idUtente];
 
-            // Aggiornamento DB
-            await db.query(
-                'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1, bandierine_piazzate = $2, secondi_giocati = COALESCE(secondi_giocati, 0) + $3 WHERE id_partita = $4 AND id_utente = $5',
-                [datiGioc.punti, datiGioc.bandierine, tempoPassato, partita.uuid, idUtente]
-            );
+    try {
+      let tempoPassato = 0;
+      if (datiGioc.timestampIngresso) {
+        tempoPassato = Math.floor(
+          (Date.now() - datiGioc.timestampIngresso) / 1000,
+        );
+      }
 
-            // Aggiornamento RAM per persistenza durante la stessa sessione
-            datiGioc.tempoAccumulato += tempoPassato;
-            datiGioc.punti = 0; // Reset dei punti parziali salvati
-            datiGioc.timestampIngresso = null; // Fermiamo il cronometro
-            
-            console.log(`Salvataggio completato per ${datiGioc.username} nella partita ${idPartita}`);
-        } catch (err) {
-            console.error("Errore salvataggio progressi:", err);
-        }
+      // Aggiornamento DB
+      await db.query(
+        "UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1, bandierine_piazzate = $2, secondi_giocati = COALESCE(secondi_giocati, 0) + $3 WHERE id_partita = $4 AND id_utente = $5",
+        [
+          datiGioc.punti,
+          datiGioc.bandierine,
+          tempoPassato,
+          partita.uuid,
+          idUtente,
+        ],
+      );
+
+      // Aggiornamento RAM per persistenza durante la stessa sessione
+      datiGioc.tempoAccumulato += tempoPassato;
+      datiGioc.punti = 0; // Reset dei punti parziali salvati
+      datiGioc.timestampIngresso = null; // Fermiamo il cronometro
+
+      console.log(
+        `Salvataggio completato per ${datiGioc.username} nella partita ${idPartita}`,
+      );
+    } catch (err) {
+      console.error("Errore salvataggio progressi:", err);
     }
+  }
 };
 
 // Quando un nuovo client si connette al server
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   console.log(`Nuovo giocatore connesso! ID: ${socket.id}`);
 
   // Inseriamo l'utente in una "Stanza Personale" basata sul suo ID DB.
@@ -122,39 +134,45 @@ io.on('connection', (socket) => {
 
   // Funzione per gli obiettivi
   const controllaObiettivo = async (idUtente, codiceSblocco) => {
-      try {
-          // Esiste questo obiettivo nel DB?
-          const resTraguardo = await db.query('SELECT id_traguardo, titolo, descrizione FROM traguardi WHERE codice_sblocco = $1', [codiceSblocco]);
-          if (resTraguardo.rows.length === 0) return; // Se non l'hai ancora creato nel DB, ignora
-          
-          const traguardo = resTraguardo.rows[0];
+    try {
+      // Esiste questo obiettivo nel DB?
+      const resTraguardo = await db.query(
+        "SELECT id_traguardo, titolo, descrizione FROM traguardi WHERE codice_sblocco = $1",
+        [codiceSblocco],
+      );
+      if (resTraguardo.rows.length === 0) return; // Se non l'hai ancora creato nel DB, ignora
 
-          // Proviamo a segnarlo come raggiunto. 
-          const resInsert = await db.query(`
+      const traguardo = resTraguardo.rows[0];
+
+      // Proviamo a segnarlo come raggiunto.
+      const resInsert = await db.query(
+        `
               INSERT INTO raggiunto_da (id_utente, id_traguardo) 
               VALUES ($1, $2) 
               ON CONFLICT (id_utente, id_traguardo) DO NOTHING 
               RETURNING *
-          `, [idUtente, traguardo.id_traguardo]);
+          `,
+        [idUtente, traguardo.id_traguardo],
+      );
 
-          // Se il DB ha inserito una nuova riga, l'ha appena sbloccato
-          if (resInsert.rows.length > 0) {
-              // Inviamo il toast direttamente nella sua stanza privata
-              io.to(`utente_${idUtente}`).emit('obiettivo_sbloccato', {
-                  titolo: traguardo.titolo,
-                  descrizione: traguardo.descrizione
-              });
-          }
-      } catch (err) {
-          console.error("Errore sblocco obiettivo:", err);
+      // Se il DB ha inserito una nuova riga, l'ha appena sbloccato
+      if (resInsert.rows.length > 0) {
+        // Inviamo il toast direttamente nella sua stanza privata
+        io.to(`utente_${idUtente}`).emit("obiettivo_sbloccato", {
+          titolo: traguardo.titolo,
+          descrizione: traguardo.descrizione,
+        });
       }
+    } catch (err) {
+      console.error("Errore sblocco obiettivo:", err);
+    }
   };
 
   // Motore di progressione
   const aggiornaProgressione = async (idUtente) => {
-      try {
-          // 1. Calcoliamo tutte le statistiche dell'utente in un colpo solo
-          const statsQuery = `
+    try {
+      // 1. Calcoliamo tutte le statistiche dell'utente in un colpo solo
+      const statsQuery = `
               SELECT 
                   u.valuta,
                   (SELECT COUNT(*) FROM gioca_in g JOIN partite p ON g.id_partita = p.id_partita WHERE g.id_utente = u.id_utente AND p.stato = 'vinta') as vittorie,
@@ -162,257 +180,324 @@ io.on('connection', (socket) => {
                   (SELECT COUNT(*) FROM inventario WHERE id_utente = u.id_utente) as oggetti
               FROM utenti u WHERE u.id_utente = $1
           `;
-          const resStats = await db.query(statsQuery, [idUtente]);
-          if (resStats.rows.length === 0) return;
-          
-          const stats = resStats.rows[0];
-          const partiteTotali = parseInt(stats.vittorie) + parseInt(stats.sconfitte);
+      const resStats = await db.query(statsQuery, [idUtente]);
+      if (resStats.rows.length === 0) return;
 
-          // 2. Prendiamo tutti i traguardi dal DB
-          const resTraguardi = await db.query('SELECT * FROM traguardi');
-          
-          // 3. Controlliamo cosa ha superato
-          for (let t of resTraguardi.rows) {
-              let sbloccato = false;
-              
-              if (t.codice_sblocco.startsWith('win_') && parseInt(stats.vittorie) >= t.requisito_valore) sbloccato = true;
-              if (t.codice_sblocco.startsWith('lose_') && parseInt(stats.sconfitte) >= t.requisito_valore) sbloccato = true;
-              if (t.codice_sblocco.startsWith('play_') && partiteTotali >= t.requisito_valore) sbloccato = true;
-              if (t.codice_sblocco.startsWith('get_') && parseInt(stats.valuta) >= t.requisito_valore) sbloccato = true;
-              if (t.codice_sblocco.startsWith('buy_') && parseInt(stats.oggetti) >= t.requisito_valore) sbloccato = true;
+      const stats = resStats.rows[0];
+      const partiteTotali =
+        parseInt(stats.vittorie) + parseInt(stats.sconfitte);
 
-              if (sbloccato) {
-                  // Proviamo a inserirlo (fallisce in automatico se lo ha già)
-                  const resInsert = await db.query(`
+      // 2. Prendiamo tutti i traguardi dal DB
+      const resTraguardi = await db.query("SELECT * FROM traguardi");
+
+      // 3. Controlliamo cosa ha superato
+      for (let t of resTraguardi.rows) {
+        let sbloccato = false;
+
+        if (
+          t.codice_sblocco.startsWith("win_") &&
+          parseInt(stats.vittorie) >= t.requisito_valore
+        )
+          sbloccato = true;
+        if (
+          t.codice_sblocco.startsWith("lose_") &&
+          parseInt(stats.sconfitte) >= t.requisito_valore
+        )
+          sbloccato = true;
+        if (
+          t.codice_sblocco.startsWith("play_") &&
+          partiteTotali >= t.requisito_valore
+        )
+          sbloccato = true;
+        if (
+          t.codice_sblocco.startsWith("get_") &&
+          parseInt(stats.valuta) >= t.requisito_valore
+        )
+          sbloccato = true;
+        if (
+          t.codice_sblocco.startsWith("buy_") &&
+          parseInt(stats.oggetti) >= t.requisito_valore
+        )
+          sbloccato = true;
+
+        if (sbloccato) {
+          // Proviamo a inserirlo (fallisce in automatico se lo ha già)
+          const resInsert = await db.query(
+            `
                       INSERT INTO raggiunto_da (id_utente, id_traguardo) 
                       VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *
-                  `, [idUtente, t.id_traguardo]);
+                  `,
+            [idUtente, t.id_traguardo],
+          );
 
-                  if (resInsert.rows.length > 0) {
-                      io.to(`utente_${idUtente}`).emit('obiettivo_sbloccato', {
-                          titolo: t.titolo, descrizione: t.descrizione
-                      });
-                  }
-              }
+          if (resInsert.rows.length > 0) {
+            io.to(`utente_${idUtente}`).emit("obiettivo_sbloccato", {
+              titolo: t.titolo,
+              descrizione: t.descrizione,
+            });
           }
-      } catch (err) {
-          console.error("Errore aggiornamento progressione:", err);
+        }
       }
+    } catch (err) {
+      console.error("Errore aggiornamento progressione:", err);
+    }
   };
 
   // Listener per i trigger dal frontend
-  socket.on('sblocca_singolo', (codice) => controllaObiettivo(socket.user.id, codice));
-  socket.on('aggiorna_progressione', () => aggiornaProgressione(socket.user.id));
+  socket.on("sblocca_singolo", (codice) =>
+    controllaObiettivo(socket.user.id, codice),
+  );
+  socket.on("aggiorna_progressione", () =>
+    aggiornaProgressione(socket.user.id),
+  );
 
   // Trigger: Appena entra, diamo il Benvenuto
-  controllaObiettivo(socket.user.id, 'crea_account');
+  controllaObiettivo(socket.user.id, "crea_account");
   // Trigger globale al login: Scansiona tutto il profilo per assegnare obiettivi retroattivi
   aggiornaProgressione(socket.user.id);
 
   // 1. L'utente chiede di entrare/creare una partita
-  socket.on('unisciti_partita', async (dati) => {
-      const { idPartita, username, idUtente, azione } = dati;
+  socket.on("unisciti_partita", async (dati) => {
+    const { idPartita, username, idUtente, azione } = dati;
 
-      // Variabile per contenere l'UUID reale della partita (ci serve per gioca_in)
-      let uuidPartita = null;
+    // Variabile per contenere l'UUID reale della partita (ci serve per gioca_in)
+    let uuidPartita = null;
 
-      if (!idUtente) {
-          socket.emit('errore_accesso', 'Devi essere loggato per giocare!');
-          return;
-      }
-      
-      // --- CASO A: L'utente vuole UNIRSI a una partita ---
-      if (azione === 'unisciti') {
-          if (!activeGames[idPartita]) {
-              // La partita non è in RAM, ripristiniamo dal DB
+    if (!idUtente) {
+      socket.emit("errore_accesso", "Devi essere loggato per giocare!");
+      return;
+    }
+
+    // --- CASO A: L'utente vuole UNIRSI a una partita ---
+    if (azione === "unisciti") {
+      if (!activeGames[idPartita]) {
+        // La partita non è in RAM, ripristiniamo dal DB
+        try {
+          const res = await db.query(
+            "SELECT * FROM partite WHERE chiave_accesso = $1",
+            [idPartita],
+          );
+
+          if (res.rows.length > 0) {
+            const p = res.rows[0];
+
+            // Se la partita è già finita, mostriamo lo storico!
+            if (p.stato !== "in_corso") {
               try {
-                  const res = await db.query('SELECT * FROM partite WHERE chiave_accesso = $1', [idPartita]);
-
-                  if (res.rows.length > 0) {
-                      const p = res.rows[0];
-
-                      // Se la partita è già finita, mostriamo lo storico!
-                      if (p.stato !== 'in_corso') {
-                          try {
-                              const resClassifica = await db.query(`
+                const resClassifica = await db.query(
+                  `
                                   SELECT u.username, COALESCE(g.punteggio_partita, 0) as punti
                                   FROM gioca_in g
                                   JOIN utenti u ON g.id_utente = u.id_utente
                                   WHERE g.id_partita = $1
                                   ORDER BY punti DESC
-                              `, [p.id_partita]);
+                              `,
+                  [p.id_partita],
+                );
 
-                              // Inviamo un evento diretto solo a chi ha richiesto l'accesso
-                              socket.emit('partita_terminata', {
-                                  esito: p.stato, // Sarà 'vinta' o 'persa'
-                                  griglia: p.mappa_config,
-                                  classifica: resClassifica.rows,
-                                  storico: true // Flag utile al frontend per sapere che sta solo guardando
-                              });
-                              return; // Fermiamo l'esecuzione, non lo facciamo entrare nella stanza
-                          } catch (err) {
-                              console.error("Errore recupero storico:", err);
-                          }
-                      } else {
-                          uuidPartita = p.id_partita; // Salviamo l'UUID
-                          const percRipristinata = (p.numero_mine / (p.larghezza * p.altezza)) * 100;
-
-                          activeGames[idPartita] = {
-                              uuid: p.id_partita,
-                              inizio: new Date(p.data_creazione).getTime(),
-                              size: p.larghezza,
-                              moltiplicatore: percRipristinata / 10,
-                              celleScoperte: p.mappa_config ? gameLogic.contaCelleScoperte(p.mappa_config) : 0,
-                              grid: p.mappa_config || gameLogic.generateEmptyGrid(p.larghezza, p.altezza),
-                              totalMines: p.numero_mine,
-                              isFirstClick: p.is_first_click,
-                              giocatori: {},
-                              messaggi: [],
-                          };
-                          console.log(`Partita ${idPartita} ripristinata dal DB in RAM`);
-                      }
-                  } else {
-                      socket.emit('errore_accesso', 'Errore: La stanza non esiste o è terminata.');
-                      return;
-                  }
+                // Inviamo un evento diretto solo a chi ha richiesto l'accesso
+                socket.emit("partita_terminata", {
+                  esito: p.stato, // Sarà 'vinta' o 'persa'
+                  griglia: p.mappa_config,
+                  classifica: resClassifica.rows,
+                  storico: true, // Flag utile al frontend per sapere che sta solo guardando
+                });
+                return; // Fermiamo l'esecuzione, non lo facciamo entrare nella stanza
               } catch (err) {
-                  console.error("Errore ripristino partita:", err);
-                  return;
+                console.error("Errore recupero storico:", err);
               }
+            } else {
+              uuidPartita = p.id_partita; // Salviamo l'UUID
+              const percRipristinata =
+                (p.numero_mine / (p.larghezza * p.altezza)) * 100;
+
+              activeGames[idPartita] = {
+                uuid: p.id_partita,
+                inizio: new Date(p.data_creazione).getTime(),
+                size: p.larghezza,
+                moltiplicatore: percRipristinata / 10,
+                celleScoperte: p.mappa_config
+                  ? gameLogic.contaCelleScoperte(p.mappa_config)
+                  : 0,
+                grid:
+                  p.mappa_config ||
+                  gameLogic.generateEmptyGrid(p.larghezza, p.altezza),
+                totalMines: p.numero_mine,
+                isFirstClick: p.is_first_click,
+                giocatori: {},
+                messaggi: [],
+              };
+              console.log(`Partita ${idPartita} ripristinata dal DB in RAM`);
+            }
           } else {
-              // La partita È in RAM ma ci serve comunque l'UUID per registrarci in gioca_in
-              try {
-                  const resUUID = await db.query('SELECT id_partita FROM partite WHERE chiave_accesso = $1', [idPartita]);
-                  uuidPartita = resUUID.rows[0].id_partita;
-              } catch (err) {
-                  console.error("Errore recupero UUID per partita in RAM:", err);
-              }
+            socket.emit(
+              "errore_accesso",
+              "Errore: La stanza non esiste o è terminata.",
+            );
+            return;
           }
-
-          // Ora che abbiamo sicuramente l'UUID (in un modo o nell'altro), leghiamo il PLAYER
-          if (uuidPartita) {
-              try {
-                  await db.query(
-                      'INSERT INTO gioca_in (id_partita, id_utente, ruolo) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-                      [uuidPartita, idUtente, 'player']
-                  );
-              } catch (err) {
-                  console.error("Errore registrazione player in gioca_in:", err);
-              }
-          }
-      } 
-      
-      // --- CASO B: L'utente vuole CREARE una nuova partita ---
-      else if (azione === 'crea') {
-          if (!activeGames[idPartita]) {
-              const size = parseInt(dati.dimensione) || 10;
-              const perc = parseInt(dati.difficolta) || 10;
-              const mineTotali = Math.floor((size * size) * (perc / 100));
-              const moltiplicatoreDifficolta = perc / 10;
-
-              try {
-                  // 1. Creiamo la partita e recuperiamo l'UUID
-                  const resPartita = await db.query(
-                      'INSERT INTO partite (chiave_accesso, larghezza, altezza, numero_mine, stato, is_first_click) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_partita',
-                      [idPartita, size, size, mineTotali, 'in_corso', true]
-                  );
-                  
-                  const uuidVero = resPartita.rows[0].id_partita;
-
-                  // 2. Leghiamo l'HOST
-                  await db.query(
-                      'INSERT INTO gioca_in (id_partita, id_utente, ruolo) VALUES ($1, $2, $3)',
-                      [uuidVero, idUtente, 'host']
-                  );
-
-                  activeGames[idPartita] = {
-                      uuid: uuidVero,
-                      inizio: Date.now(),
-                      size: size,
-                      moltiplicatore: moltiplicatoreDifficolta,
-                      celleScoperte: 0,
-                      grid: gameLogic.generateEmptyGrid(size, size),
-                      totalMines: mineTotali,
-                      isFirstClick: true,
-                      giocatori: {},
-                      messaggi: []
-                  };
-
-              } catch (err) {
-                  console.error("Errore salvataggio partita/host nel DB:", err);
-              }
-          }
-      }
-
-      // --- Accesso alla stanza Socket e aggiornamento UI ---
-      socket.join(idPartita);
-      console.log(`${username} è entrato nella partita ${idPartita}`);
-      
-      // Recuperiamo i progressi precedenti dal DB (se esistono) per chi si riconnette
-      let tempoDB = 0, puntiDB = 0, bandierineDB = 0;
-      if (uuidPartita) {
-          try {
-              const resG = await db.query('SELECT punteggio_partita, bandierine_piazzate, secondi_giocati FROM gioca_in WHERE id_partita = $1 AND id_utente = $2', [uuidPartita, idUtente]);
-              if (resG.rows.length > 0) {
-                  puntiDB = resG.rows[0].punteggio_partita || 0;
-                  bandierineDB = resG.rows[0].bandierine_piazzate || 0;
-                  tempoDB = resG.rows[0].secondi_giocati || 0;
-              }
-          } catch(err) { console.error("Errore recupero stats personali:", err); }
-      }
-
-      // Registriamo l'utente nell'oggetto in RAM
-      if (!activeGames[idPartita].giocatori[idUtente]) {
-          activeGames[idPartita].giocatori[idUtente] = {
-              username: username,
-              punti: puntiDB,
-              bandierine: bandierineDB,
-              tempoAccumulato: tempoDB,
-              timestampIngresso: Date.now(),
-              socketId: socket.id
-          };
+        } catch (err) {
+          console.error("Errore ripristino partita:", err);
+          return;
+        }
       } else {
-          // Si sta riconnettendo: aggiorniamo la scheda attiva
-          activeGames[idPartita].giocatori[idUtente].socketId = socket.id;
-          
-          // Riavvia il timer SOLO se si era fermato per una disconnessione pulita
-          if (!activeGames[idPartita].giocatori[idUtente].timestampIngresso) {
-              activeGames[idPartita].giocatori[idUtente].timestampIngresso = Date.now();
-          }
+        // La partita È in RAM ma ci serve comunque l'UUID per registrarci in gioca_in
+        try {
+          const resUUID = await db.query(
+            "SELECT id_partita FROM partite WHERE chiave_accesso = $1",
+            [idPartita],
+          );
+          uuidPartita = resUUID.rows[0].id_partita;
+        } catch (err) {
+          console.error("Errore recupero UUID per partita in RAM:", err);
+        }
       }
-      
-      socket.datiUtente = { idPartita, idUtente, username };
-      
-      io.to(idPartita).emit('messaggio_sistema', `${username} si è unito alla partita!`);
-      socket.emit('aggiorna_griglia', activeGames[idPartita].grid);
-      socket.emit('storico_chat', activeGames[idPartita].messaggi);
-      socket.emit('sync_hud', { 
-        tempo: Math.floor((Date.now() - activeGames[idPartita].giocatori[idUtente].timestampIngresso) / 1000) + activeGames[idPartita].giocatori[idUtente].tempoAccumulato, 
-        punti: activeGames[idPartita].giocatori[idUtente].punti,
-        bandierine: activeGames[idPartita].giocatori[idUtente].bandierine
-      });
+
+      // Ora che abbiamo sicuramente l'UUID (in un modo o nell'altro), leghiamo il PLAYER
+      if (uuidPartita) {
+        try {
+          await db.query(
+            "INSERT INTO gioca_in (id_partita, id_utente, ruolo) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+            [uuidPartita, idUtente, "player"],
+          );
+        } catch (err) {
+          console.error("Errore registrazione player in gioca_in:", err);
+        }
+      }
+    }
+
+    // --- CASO B: L'utente vuole CREARE una nuova partita ---
+    else if (azione === "crea") {
+      if (!activeGames[idPartita]) {
+        const size = parseInt(dati.dimensione) || 10;
+        const perc = parseInt(dati.difficolta) || 10;
+        const mineTotali = Math.floor(size * size * (perc / 100));
+        const moltiplicatoreDifficolta = perc / 10;
+
+        try {
+          // 1. Creiamo la partita e recuperiamo l'UUID
+          const resPartita = await db.query(
+            "INSERT INTO partite (chiave_accesso, larghezza, altezza, numero_mine, stato, is_first_click) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_partita",
+            [idPartita, size, size, mineTotali, "in_corso", true],
+          );
+
+          const uuidVero = resPartita.rows[0].id_partita;
+
+          // 2. Leghiamo l'HOST
+          await db.query(
+            "INSERT INTO gioca_in (id_partita, id_utente, ruolo) VALUES ($1, $2, $3)",
+            [uuidVero, idUtente, "host"],
+          );
+
+          activeGames[idPartita] = {
+            uuid: uuidVero,
+            inizio: Date.now(),
+            size: size,
+            moltiplicatore: moltiplicatoreDifficolta,
+            celleScoperte: 0,
+            grid: gameLogic.generateEmptyGrid(size, size),
+            totalMines: mineTotali,
+            isFirstClick: true,
+            giocatori: {},
+            messaggi: [],
+          };
+        } catch (err) {
+          console.error("Errore salvataggio partita/host nel DB:", err);
+        }
+      }
+    }
+
+    // --- Accesso alla stanza Socket e aggiornamento UI ---
+    socket.join(idPartita);
+    console.log(`${username} è entrato nella partita ${idPartita}`);
+
+    // Recuperiamo i progressi precedenti dal DB (se esistono) per chi si riconnette
+    let tempoDB = 0,
+      puntiDB = 0,
+      bandierineDB = 0;
+    if (uuidPartita) {
+      try {
+        const resG = await db.query(
+          "SELECT punteggio_partita, bandierine_piazzate, secondi_giocati FROM gioca_in WHERE id_partita = $1 AND id_utente = $2",
+          [uuidPartita, idUtente],
+        );
+        if (resG.rows.length > 0) {
+          puntiDB = resG.rows[0].punteggio_partita || 0;
+          bandierineDB = resG.rows[0].bandierine_piazzate || 0;
+          tempoDB = resG.rows[0].secondi_giocati || 0;
+        }
+      } catch (err) {
+        console.error("Errore recupero stats personali:", err);
+      }
+    }
+
+    // Registriamo l'utente nell'oggetto in RAM
+    if (!activeGames[idPartita].giocatori[idUtente]) {
+      activeGames[idPartita].giocatori[idUtente] = {
+        username: username,
+        punti: puntiDB,
+        bandierine: bandierineDB,
+        tempoAccumulato: tempoDB,
+        timestampIngresso: Date.now(),
+        socketId: socket.id,
+      };
+    } else {
+      // Si sta riconnettendo: aggiorniamo la scheda attiva
+      activeGames[idPartita].giocatori[idUtente].socketId = socket.id;
+
+      // Riavvia il timer SOLO se si era fermato per una disconnessione pulita
+      if (!activeGames[idPartita].giocatori[idUtente].timestampIngresso) {
+        activeGames[idPartita].giocatori[idUtente].timestampIngresso =
+          Date.now();
+      }
+    }
+
+    socket.datiUtente = { idPartita, idUtente, username };
+
+    io.to(idPartita).emit(
+      "messaggio_sistema",
+      `${username} si è unito alla partita!`,
+    );
+    socket.emit("aggiorna_griglia", activeGames[idPartita].grid);
+    socket.emit("storico_chat", activeGames[idPartita].messaggi);
+    socket.emit("sync_hud", {
+      tempo:
+        Math.floor(
+          (Date.now() -
+            activeGames[idPartita].giocatori[idUtente].timestampIngresso) /
+            1000,
+        ) + activeGames[idPartita].giocatori[idUtente].tempoAccumulato,
+      punti: activeGames[idPartita].giocatori[idUtente].punti,
+      bandierine: activeGames[idPartita].giocatori[idUtente].bandierine,
+    });
   });
 
   // 2. Il client invia una mossa
-  socket.on('mossa_utente', async (dati) => {
+  socket.on("mossa_utente", async (dati) => {
     const { idPartita, x, y, azione } = dati;
     const partita = activeGames[idPartita];
     let clickIniziale = false;
 
     // Se la partita non esiste, ignoriamo la mossa
-    if (!partita) return; 
+    if (!partita) return;
 
     // A. È il primo click in assoluto? Generiamo le mine
-    if (azione === 'scopri' && partita.isFirstClick) {
+    if (azione === "scopri" && partita.isFirstClick) {
       // 1. Controllo di sicurezza sul DB per evitare sovrascritture
       try {
-        const res = await db.query('SELECT is_first_click FROM partite WHERE chiave_accesso = $1', [idPartita]);
-        
+        const res = await db.query(
+          "SELECT is_first_click FROM partite WHERE chiave_accesso = $1",
+          [idPartita],
+        );
+
         // Se is_first_click è già false sul DB, significa che un altro giocatore ha già cliccato
         if (res.rows.length > 0 && res.rows[0].is_first_click === false) {
-          partita.isFirstClick = false; 
+          partita.isFirstClick = false;
           // Recuperiamo la mappa che è già stata generata dall'altro giocatore
-          const resMappa = await db.query('SELECT mappa_config FROM partite WHERE chiave_accesso = $1', [idPartita]);
+          const resMappa = await db.query(
+            "SELECT mappa_config FROM partite WHERE chiave_accesso = $1",
+            [idPartita],
+          );
           partita.grid = resMappa.rows[0].mappa_config;
         } else {
           clickIniziale = true;
@@ -423,8 +508,8 @@ io.on('connection', (socket) => {
 
           // 2. Aggiorniamo il DB: salviamo la mappa e "chiudiamo" il primo click
           await db.query(
-            'UPDATE partite SET mappa_config = $1, is_first_click = $2 WHERE chiave_accesso = $3',
-            [JSON.stringify(partita.grid), false, idPartita]
+            "UPDATE partite SET mappa_config = $1, is_first_click = $2 WHERE chiave_accesso = $3",
+            [JSON.stringify(partita.grid), false, idPartita],
           );
         }
       } catch (err) {
@@ -434,196 +519,234 @@ io.on('connection', (socket) => {
     }
 
     // B. Applichiamo la mossa
-    if (azione === 'bandierina') {
+    if (azione === "bandierina") {
       gameLogic.toggleFlag(partita.grid, x, y);
       if (partita.grid[y][x].isFlagged) {
         partita.giocatori[dati.idUtente].bandierine++;
       } else {
-          partita.giocatori[dati.idUtente].bandierine--;
+        partita.giocatori[dati.idUtente].bandierine--;
       }
       // Inviamo l'aggiornamento
-      socket.emit('sync_hud', { 
-          tempo: Math.floor((Date.now() - partita.giocatori[dati.idUtente].timestampIngresso) / 1000) + partita.giocatori[dati.idUtente].tempoAccumulato, 
-          punti: partita.giocatori[dati.idUtente].punti,
-          bandierine: partita.giocatori[dati.idUtente].bandierine
+      socket.emit("sync_hud", {
+        tempo:
+          Math.floor(
+            (Date.now() - partita.giocatori[dati.idUtente].timestampIngresso) /
+              1000,
+          ) + partita.giocatori[dati.idUtente].tempoAccumulato,
+        punti: partita.giocatori[dati.idUtente].punti,
+        bandierine: partita.giocatori[dati.idUtente].bandierine,
       });
 
       // Salviamo immediatamente il dato nel Database
       try {
-          await db.query(
-              'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
-              [partita.giocatori[dati.idUtente].bandierine, partita.uuid, dati.idUtente]
-          );
+        await db.query(
+          "UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3",
+          [
+            partita.giocatori[dati.idUtente].bandierine,
+            partita.uuid,
+            dati.idUtente,
+          ],
+        );
       } catch (err) {
-          console.error("Errore salvataggio bandierina in diretta:", err);
+        console.error("Errore salvataggio bandierina in diretta:", err);
       }
-    } else if (azione === 'scopri') {
+    } else if (azione === "scopri") {
       // Ha cliccato una mina?
       if (partita.grid[y][x].isMine) {
         // Sveliamo tutte le mine sulla griglia
         gameLogic.revealAllMines(partita.grid);
         // Aggiornamento stato 'persa' nel db
         try {
-            // Nessun bonus, trasferiamo semplicemente i punti accumulati fino a quel momento
-            await db.query(`
+          // Nessun bonus, trasferiamo semplicemente i punti accumulati fino a quel momento
+          await db.query(
+            `
                 UPDATE utenti 
                 SET valuta = valuta + COALESCE(g.punteggio_partita, 0)
                 FROM gioca_in g
                 WHERE utenti.id_utente = g.id_utente AND g.id_partita = $1
-            `, [partita.uuid]);
+            `,
+            [partita.uuid],
+          );
 
-            await db.query(
-                'UPDATE partite SET stato = $1, data_fine = NOW(), mappa_config = $2 WHERE id_partita = $3',
-                ['persa', JSON.stringify(partita.grid), partita.uuid]
-            );
+          await db.query(
+            "UPDATE partite SET stato = $1, data_fine = NOW(), mappa_config = $2 WHERE id_partita = $3",
+            ["persa", JSON.stringify(partita.grid), partita.uuid],
+          );
 
-            // Sblocca progressioni sconfitta per tutti
-            Object.keys(partita.giocatori).forEach(idGioc => aggiornaProgressione(idGioc));
+          // Sblocca progressioni sconfitta per tutti
+          Object.keys(partita.giocatori).forEach((idGioc) =>
+            aggiornaProgressione(idGioc),
+          );
 
-            // Recuperiamo la classifica della partita appena finita
-            const resClassifica = await db.query(`
+          // Recuperiamo la classifica della partita appena finita
+          const resClassifica = await db.query(
+            `
                 SELECT u.username, COALESCE(g.punteggio_partita, 0) as punti
                 FROM gioca_in g
                 JOIN utenti u ON g.id_utente = u.id_utente
                 WHERE g.id_partita = $1
                 ORDER BY punti DESC
-            `, [partita.uuid]);
+            `,
+            [partita.uuid],
+          );
 
-            // Inviamo l'evento con i dati completi
-            io.to(idPartita).emit('partita_terminata', { 
-                esito: 'sconfitta', 
-                griglia: partita.grid,
-                classifica: resClassifica.rows // Array con i giocatori ordinati
-            });
+          // Inviamo l'evento con i dati completi
+          io.to(idPartita).emit("partita_terminata", {
+            esito: "sconfitta",
+            griglia: partita.grid,
+            classifica: resClassifica.rows, // Array con i giocatori ordinati
+          });
         } catch (err) {
-            console.error("Errore fine partita Sconfitta:", err);
+          console.error("Errore fine partita Sconfitta:", err);
         }
 
         // Salva le bandierine finali E il tempo per tutti i giocatori
         for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
-            let tempoPassato = 0;
-            if (datiGioc.timestampIngresso) { // Se è connesso
-                tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
-            }
-            try {
-                await db.query(
-                    'UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4',
-                    [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc]
-                );
-            } catch (err) {
-                console.error("Errore salvataggio finali:", err);
-            }
+          let tempoPassato = 0;
+          if (datiGioc.timestampIngresso) {
+            // Se è connesso
+            tempoPassato = Math.floor(
+              (Date.now() - datiGioc.timestampIngresso) / 1000,
+            );
+          }
+          try {
+            await db.query(
+              "UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4",
+              [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc],
+            );
+          } catch (err) {
+            console.error("Errore salvataggio finali:", err);
+          }
         }
-        
+
         delete activeGames[idPartita];
         return;
       } else {
-          // 1. Contiamo prima della mossa
-          const cellePrima = gameLogic.contaCelleScoperte(partita.grid);
-          
-          // 2. Eseguiamo il flood-fill
-          gameLogic.revealCell(partita.grid, x, y);
-          
-          // 3. Contiamo dopo la mossa
-          const celleDopo = gameLogic.contaCelleScoperte(partita.grid);
-          const nuoveScoperte = celleDopo - cellePrima;
+        // 1. Contiamo prima della mossa
+        const cellePrima = gameLogic.contaCelleScoperte(partita.grid);
 
-          // 4. Calcolo Punteggio
-          if (nuoveScoperte > 0) {
-              let puntiGuadagnati = 0;
-              for (let i = 1; i <= nuoveScoperte; i++) {
-                  partita.celleScoperte++;
-                  if (!clickIniziale){
-                      puntiGuadagnati += Math.log(partita.celleScoperte) * partita.moltiplicatore;
-                  }
-              }
-              
-              // Arrotondiamo per non avere decimali nel DB
-              puntiGuadagnati = Math.round(puntiGuadagnati);
-              // -- AGGIORNAMENTO DB: Sommiamo i punti nella tabella gioca_in --
-              if (puntiGuadagnati > 0){
-                  try {
-                    partita.giocatori[dati.idUtente].punti += puntiGuadagnati;
-                    // Inviamo l'aggiornamento
-                    socket.emit('sync_hud', { 
-                        tempo: Math.floor((Date.now() - partita.giocatori[dati.idUtente].timestampIngresso) / 1000) + partita.giocatori[dati.idUtente].tempoAccumulato, 
-                        punti: partita.giocatori[dati.idUtente].punti,
-                        bandierine: partita.giocatori[dati.idUtente].bandierine
-                    });
-                      await db.query(
-                          'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2 AND id_utente = $3',
-                          [puntiGuadagnati, partita.uuid, dati.idUtente]
-                      );
-                  } catch (err) {
-                      console.error("Errore salvataggio punti mossa:", err);
-                  }
-              }
+        // 2. Eseguiamo il flood-fill
+        gameLogic.revealCell(partita.grid, x, y);
+
+        // 3. Contiamo dopo la mossa
+        const celleDopo = gameLogic.contaCelleScoperte(partita.grid);
+        const nuoveScoperte = celleDopo - cellePrima;
+
+        // 4. Calcolo Punteggio
+        if (nuoveScoperte > 0) {
+          let puntiGuadagnati = 0;
+          for (let i = 1; i <= nuoveScoperte; i++) {
+            partita.celleScoperte++;
+            if (!clickIniziale) {
+              puntiGuadagnati +=
+                Math.log(partita.celleScoperte) * partita.moltiplicatore;
+            }
           }
+
+          // Arrotondiamo per non avere decimali nel DB
+          puntiGuadagnati = Math.round(puntiGuadagnati);
+          // -- AGGIORNAMENTO DB: Sommiamo i punti nella tabella gioca_in --
+          if (puntiGuadagnati > 0) {
+            try {
+              partita.giocatori[dati.idUtente].punti += puntiGuadagnati;
+              // Inviamo l'aggiornamento
+              socket.emit("sync_hud", {
+                tempo:
+                  Math.floor(
+                    (Date.now() -
+                      partita.giocatori[dati.idUtente].timestampIngresso) /
+                      1000,
+                  ) + partita.giocatori[dati.idUtente].tempoAccumulato,
+                punti: partita.giocatori[dati.idUtente].punti,
+                bandierine: partita.giocatori[dati.idUtente].bandierine,
+              });
+              await db.query(
+                "UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2 AND id_utente = $3",
+                [puntiGuadagnati, partita.uuid, dati.idUtente],
+              );
+            } catch (err) {
+              console.error("Errore salvataggio punti mossa:", err);
+            }
+          }
+        }
       }
     }
 
     // C. Controlliamo se questa mossa lo ha fatto vincere
     if (gameLogic.checkWin(partita.grid, partita.totalMines)) {
-      const bonusVittoria = Math.round(partita.size * partita.size * partita.moltiplicatore);
+      const bonusVittoria = Math.round(
+        partita.size * partita.size * partita.moltiplicatore,
+      );
       // Operazione DB: Chiudiamo la partita
       try {
-          // 1. Diamo il bonus a TUTTI i giocatori della partita
-          await db.query(
-              'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2',
-              [bonusVittoria, partita.uuid]
-          );
+        // 1. Diamo il bonus a TUTTI i giocatori della partita
+        await db.query(
+          "UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2",
+          [bonusVittoria, partita.uuid],
+        );
 
-          // 2. Versiamo i punti finali di questa partita nei portafogli degli utenti
-          await db.query(`
+        // 2. Versiamo i punti finali di questa partita nei portafogli degli utenti
+        await db.query(
+          `
               UPDATE utenti 
               SET valuta = valuta + COALESCE(g.punteggio_partita, 0)
               FROM gioca_in g
               WHERE utenti.id_utente = g.id_utente AND g.id_partita = $1
-          `, [partita.uuid]);
+          `,
+          [partita.uuid],
+        );
 
-          // 3. Chiudiamo la partita
-          await db.query(
-              'UPDATE partite SET stato = $1, data_fine = NOW(), mappa_config = $2 WHERE id_partita = $3',
-              ['vinta', JSON.stringify(partita.grid), partita.uuid]
-          );
+        // 3. Chiudiamo la partita
+        await db.query(
+          "UPDATE partite SET stato = $1, data_fine = NOW(), mappa_config = $2 WHERE id_partita = $3",
+          ["vinta", JSON.stringify(partita.grid), partita.uuid],
+        );
 
-          // Sblocca progressioni vittoria per tutti
-          Object.keys(partita.giocatori).forEach(idGioc => aggiornaProgressione(idGioc));
+        // Sblocca progressioni vittoria per tutti
+        Object.keys(partita.giocatori).forEach((idGioc) =>
+          aggiornaProgressione(idGioc),
+        );
 
-          // Recuperiamo la classifica della partita appena finita
-            const resClassifica = await db.query(`
+        // Recuperiamo la classifica della partita appena finita
+        const resClassifica = await db.query(
+          `
                 SELECT u.username, COALESCE(g.punteggio_partita, 0) as punti
                 FROM gioca_in g
                 JOIN utenti u ON g.id_utente = u.id_utente
                 WHERE g.id_partita = $1
                 ORDER BY punti DESC
-            `, [partita.uuid]);
+            `,
+          [partita.uuid],
+        );
 
-            // Inviamo l'evento con i dati completi
-            io.to(idPartita).emit('partita_terminata', { 
-                esito: 'vittoria', 
-                griglia: partita.grid,
-                classifica: resClassifica.rows,
-                bonus: bonusVittoria
-            });
+        // Inviamo l'evento con i dati completi
+        io.to(idPartita).emit("partita_terminata", {
+          esito: "vittoria",
+          griglia: partita.grid,
+          classifica: resClassifica.rows,
+          bonus: bonusVittoria,
+        });
       } catch (err) {
-          console.error("Errore fine partita Vittoria:", err);
+        console.error("Errore fine partita Vittoria:", err);
       }
 
       // Salva le bandierine finali E il tempo per tutti i giocatori
       for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
-          let tempoPassato = 0;
-          if (datiGioc.timestampIngresso) { // Se è connesso
-              tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
-          }
-          try {
-              await db.query(
-                  'UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4',
-                  [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc]
-              );
-          } catch (err) {
-              console.error("Errore salvataggio finali:", err);
-          }
+        let tempoPassato = 0;
+        if (datiGioc.timestampIngresso) {
+          // Se è connesso
+          tempoPassato = Math.floor(
+            (Date.now() - datiGioc.timestampIngresso) / 1000,
+          );
+        }
+        try {
+          await db.query(
+            "UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4",
+            [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc],
+          );
+        } catch (err) {
+          console.error("Errore salvataggio finali:", err);
+        }
       }
 
       delete activeGames[idPartita]; // Puliamo la RAM
@@ -632,39 +755,45 @@ io.on('connection', (socket) => {
 
     // D. Salva lo stato attuale della griglia nel DB
     try {
-        await db.query(
-            'UPDATE partite SET mappa_config = $1 WHERE chiave_accesso = $2',
-            [JSON.stringify(partita.grid), idPartita]
-        );
+      await db.query(
+        "UPDATE partite SET mappa_config = $1 WHERE chiave_accesso = $2",
+        [JSON.stringify(partita.grid), idPartita],
+      );
     } catch (err) {
-        console.error("Errore salvataggio progresso mossa:", err);
+      console.error("Errore salvataggio progresso mossa:", err);
     }
 
     // E. Se il gioco continua, invia la griglia aggiornata a tutta la stanza
-    io.to(idPartita).emit('aggiorna_griglia', partita.grid);
+    io.to(idPartita).emit("aggiorna_griglia", partita.grid);
   });
 
   // Gestione della Chat
-  socket.on('invia_messaggio_chat', async (dati) => {
+  socket.on("invia_messaggio_chat", async (dati) => {
     const { idPartita, idUtente, username, testo } = dati;
-    
+
     if (activeGames[idPartita]) {
       // Creiamo l'oggetto messaggio (proprio come fosse una riga del database)
       const nuovoMessaggio = {
         autore: username,
         testo: testo,
-        ora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) // Es. "14:30"
+        ora: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }), // Es. "14:30"
       };
 
       //--Operazione DB: Salviamo  nella tabella messaggi olte che nella RAM
       try {
         //Recuperiamo l'uuid della partita tramite il campo 'chiave_accesso'
-        const resPartita = await db.query('SELECT id_partita FROM partite  WHERE chiave_accesso = $1', [idPartita]);
+        const resPartita = await db.query(
+          "SELECT id_partita FROM partite  WHERE chiave_accesso = $1",
+          [idPartita],
+        );
         if (resPartita.rows.length > 0) {
           const uuidPartita = resPartita.rows[0].id_partita;
           await db.query(
-            'INSERT INTO messaggi (id_partita, id_utente, testo) VALUES ($1, $2, $3)',
-            [uuidPartita, idUtente, testo]
+            "INSERT INTO messaggi (id_partita, id_utente, testo) VALUES ($1, $2, $3)",
+            [uuidPartita, idUtente, testo],
           );
         }
       } catch (err) {
@@ -675,33 +804,40 @@ io.on('connection', (socket) => {
       activeGames[idPartita].messaggi.push(nuovoMessaggio);
 
       // 2. Lo spediamo a tutti i presenti nella stanza (compreso chi lo ha inviato)
-      io.to(idPartita).emit('nuovo_messaggio_chat', nuovoMessaggio);
+      io.to(idPartita).emit("nuovo_messaggio_chat", nuovoMessaggio);
     }
   });
 
-  socket.on('lascia_partita', async (dati) => {
-        await salvaProgressiGiocatore(dati.idPartita, dati.idUtente);
-    });
+  socket.on("lascia_partita", async (dati) => {
+    await salvaProgressiGiocatore(dati.idPartita, dati.idUtente);
+  });
 
-    socket.on('disconnect', async () => {
-        if (socket.datiUtente) {
-            const { idPartita, idUtente, username } = socket.datiUtente;
-            if (activeGames[idPartita] && activeGames[idPartita].giocatori[idUtente]) {
-                // Verifichiamo che la scheda che si scollega sia quella attiva (Fix Race Condition)
-                if (activeGames[idPartita].giocatori[idUtente].socketId === socket.id) {
-                    await salvaProgressiGiocatore(idPartita, idUtente);
-                    io.to(idPartita).emit('messaggio_sistema', `${username} si è scollegato.`);
-                }
-            }
+  socket.on("disconnect", async () => {
+    if (socket.datiUtente) {
+      const { idPartita, idUtente, username } = socket.datiUtente;
+      if (
+        activeGames[idPartita] &&
+        activeGames[idPartita].giocatori[idUtente]
+      ) {
+        // Verifichiamo che la scheda che si scollega sia quella attiva (Fix Race Condition)
+        if (activeGames[idPartita].giocatori[idUtente].socketId === socket.id) {
+          await salvaProgressiGiocatore(idPartita, idUtente);
+          io.to(idPartita).emit(
+            "messaggio_sistema",
+            `${username} si è scollegato.`,
+          );
         }
-    });
+      }
+    }
+  });
 
   // Gestione richiesta storico personale
-  socket.on('richiedi_storico', async (idUtente) => {
-      if (!idUtente) return;
+  socket.on("richiedi_storico", async (idUtente) => {
+    if (!idUtente) return;
 
-      try {
-          const res = await db.query(`
+    try {
+      const res = await db.query(
+        `
               SELECT 
                   p.chiave_accesso, 
                   p.stato, 
@@ -715,12 +851,14 @@ io.on('connection', (socket) => {
               JOIN gioca_in g ON p.id_partita = g.id_partita
               WHERE g.id_utente = $1
               ORDER BY p.data_creazione DESC
-          `, [idUtente]);
-          
-          socket.emit('storico_ricevuto', res.rows);
-      } catch (err) {
-          console.error("Errore recupero storico:", err);
-      }
+          `,
+        [idUtente],
+      );
+
+      socket.emit("storico_ricevuto", res.rows);
+    } catch (err) {
+      console.error("Errore recupero storico:", err);
+    }
   });
 });
 

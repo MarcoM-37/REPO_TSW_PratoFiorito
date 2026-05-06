@@ -7,18 +7,18 @@ import { onMounted } from 'vue'
 onMounted(() => {
   // 1. Se c'è un utente loggato, accendiamo il Socket in tutto il sito
   if (sessione.utente) {
-    socket.auth = { token: localStorage.getItem('token_campo_minato') };
-    socket.connect();
+    socket.auth = { token: localStorage.getItem('token_campo_minato') }
+    socket.connect()
   }
 
   // 2. Restiamo in ascolto se il server ci sblocca un obiettivo
   socket.on('obiettivo_sbloccato', (dati) => {
-    toast.mostra(dati.titolo, dati.descrizione);
-  });
-});
+    toast.mostra(dati.titolo, dati.descrizione)
+  })
+})
 </script>
 
-<template >
+<template>
   <div id="ambiente">
     <Header />
     <main>
@@ -42,12 +42,11 @@ onMounted(() => {
         <button class="toast-chiudi" @click="toast.chiudi()">X</button>
       </div>
     </div>
-
   </div>
 </template>
 
 <style>
-  #ambiente {
+#ambiente {
   --bg-color: v-bind('skin.temaPrincipale');
   --bg-pattern: v-bind('skin.sfondoURL');
   --icona: v-bind('skin.icona');
@@ -72,7 +71,7 @@ onMounted(() => {
   padding: 25px 30px;
   border-radius: 12px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   min-width: 300px;
   max-width: 80%;
   animation: comparsa 0.2s ease-out;
@@ -100,8 +99,14 @@ onMounted(() => {
 }
 
 @keyframes comparsa {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .toast-container {
@@ -121,7 +126,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   min-width: 250px;
   max-width: 350px;
 }
@@ -145,7 +150,7 @@ onMounted(() => {
 .toast-chiudi {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 1.2rem;
   cursor: pointer;
   margin-left: auto;
@@ -157,7 +162,13 @@ onMounted(() => {
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>
