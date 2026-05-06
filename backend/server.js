@@ -229,6 +229,7 @@ io.on('connection', (socket) => {
 
                           activeGames[idPartita] = {
                               uuid: p.id_partita,
+                              inizio: new Date(p.data_creazione).getTime(),
                               size: p.larghezza,
                               moltiplicatore: percRipristinata / 10,
                               celleScoperte: p.mappa_config ? gameLogic.contaCelleScoperte(p.mappa_config) : 0,
@@ -236,7 +237,7 @@ io.on('connection', (socket) => {
                               totalMines: p.numero_mine,
                               isFirstClick: p.is_first_click,
                               giocatori: {},
-                              messaggi: []
+                              messaggi: [],
                           };
                           console.log(`Partita ${idPartita} ripristinata dal DB in RAM`);
                       }
@@ -295,7 +296,8 @@ io.on('connection', (socket) => {
                   );
 
                   activeGames[idPartita] = {
-                      uuid: uuidVero, // Salviamo l'UUID per usarlo nelle query dei punti!
+                      uuid: uuidVero,
+                      inizio: Date.now(),
                       size: size,
                       moltiplicatore: moltiplicatoreDifficolta,
                       celleScoperte: 0,
@@ -321,7 +323,8 @@ io.on('connection', (socket) => {
       if (!activeGames[idPartita].giocatori[idUtente]) {
           activeGames[idPartita].giocatori[idUtente] = {
               username: username,
-              punti: 0 
+              punti: 0,
+              bandierine: 0
           };
       }
       socket.datiUtente = { idPartita, idUtente, username };
@@ -329,6 +332,11 @@ io.on('connection', (socket) => {
       io.to(idPartita).emit('messaggio_sistema', `${username} si è unito alla partita!`);
       socket.emit('aggiorna_griglia', activeGames[idPartita].grid);
       socket.emit('storico_chat', activeGames[idPartita].messaggi);
+      socket.emit('sync_hud', { 
+        tempo: Math.floor((Date.now() - activeGames[idPartita].inizio) / 1000), 
+        punti: activeGames[idPartita].giocatori[idUtente].punti,
+        bandierine: activeGames[idPartita].giocatori[idUtente].bandierine
+      });
   });
 
   // 2. Il client invia una mossa
@@ -374,6 +382,27 @@ io.on('connection', (socket) => {
     // B. Applichiamo la mossa
     if (azione === 'bandierina') {
       gameLogic.toggleFlag(partita.grid, x, y);
+      if (partita.grid[y][x].isFlagged) {
+        partita.giocatori[dati.idUtente].bandierine++;
+      } else {
+          partita.giocatori[dati.idUtente].bandierine--;
+      }
+      // Inviamo l'aggiornamento
+      socket.emit('sync_hud', { 
+          tempo: Math.floor((Date.now() - partita.inizio) / 1000), 
+          punti: partita.giocatori[dati.idUtente].punti,
+          bandierine: partita.giocatori[dati.idUtente].bandierine
+      });
+
+      // Salviamo immediatamente il dato nel Database
+      try {
+          await db.query(
+              'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
+              [partita.giocatori[dati.idUtente].bandierine, partita.uuid, dati.idUtente]
+          );
+      } catch (err) {
+          console.error("Errore salvataggio bandierina in diretta:", err);
+      }
     } else if (azione === 'scopri') {
       // Ha cliccato una mina?
       if (partita.grid[y][x].isMine) {
@@ -416,6 +445,18 @@ io.on('connection', (socket) => {
             console.error("Errore fine partita Sconfitta:", err);
         }
 
+        // Salva le bandierine finali per tutti i giocatori
+        for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
+            try {
+                await db.query(
+                    'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
+                    [datiGioc.bandierine, partita.uuid, idGioc]
+                );
+            } catch (err) {
+                console.error("Errore salvataggio bandierine (Sconfitta):", err);
+            }
+        }
+        
         delete activeGames[idPartita];
         return;
       } else {
@@ -444,6 +485,12 @@ io.on('connection', (socket) => {
               // -- AGGIORNAMENTO DB: Sommiamo i punti nella tabella gioca_in --
               if (puntiGuadagnati > 0){
                   try {
+                    partita.giocatori[dati.idUtente].punti += puntiGuadagnati;
+                    socket.emit('sync_hud', { 
+                        tempo: Math.floor((Date.now() - partita.inizio) / 1000), 
+                        punti: partita.giocatori[dati.idUtente].punti,
+                        bandierine: partita.giocatori[dati.idUtente].bandierine
+                    });
                       await db.query(
                           'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2 AND id_utente = $3',
                           [puntiGuadagnati, partita.uuid, dati.idUtente]
@@ -502,6 +549,18 @@ io.on('connection', (socket) => {
             });
       } catch (err) {
           console.error("Errore fine partita Vittoria:", err);
+      }
+
+      // Salva le bandierine finali per tutti i giocatori
+      for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
+          try {
+              await db.query(
+                  'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
+                  [datiGioc.bandierine, partita.uuid, idGioc]
+              );
+          } catch (err) {
+              console.error("Errore salvataggio bandierine (Vittoria):", err);
+          }
       }
 
       delete activeGames[idPartita]; // Puliamo la RAM
@@ -570,21 +629,19 @@ io.on('connection', (socket) => {
         if (partita && partita.giocatori[idUtente]) {
             const puntiDaSalvare = partita.giocatori[idUtente].punti;
 
-            if (puntiDaSalvare > 0) {
-                try {
-                    // 1. Salviamo i punti parziali nel database (nello storico)
-                    await db.query(
-                        'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1 WHERE id_partita = $2 AND id_utente = $3',
-                        [puntiDaSalvare, partita.uuid, idUtente]
-                    );
+            // RIMOSSO l'if(puntiDaSalvare > 0) per garantire il salvataggio delle bandierine
+            try {
+                // Salviamo i punti parziali e le bandierine nel database
+                await db.query(
+                    'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1, bandierine_piazzate = $2 WHERE id_partita = $3 AND id_utente = $4',
+                    [puntiDaSalvare, partita.giocatori[idUtente].bandierine, partita.uuid, idUtente]
+                );
 
-                    // 2. Azzeriamo i punti in RAM
-                    // (Così se la partita finisce dopo, non glieli salviamo due volte)
-                    partita.giocatori[idUtente].punti = 0;
-                    
-                } catch (err) {
-                    console.error("Errore salvataggio punti su disconnessione:", err);
-                }
+                // Azzeriamo i punti in RAM (così se la partita finisce non duplichiamo)
+                partita.giocatori[idUtente].punti = 0;
+                
+            } catch (err) {
+                console.error("Errore salvataggio su disconnessione:", err);
             }
 
             // Avvisiamo gli altri giocatori rimasti
@@ -605,7 +662,9 @@ io.on('connection', (socket) => {
                   p.data_creazione, 
                   p.larghezza, 
                   p.numero_mine, 
-                  COALESCE(g.punteggio_partita, 0) as punti
+                  COALESCE(g.punteggio_partita, 0) as punti,
+                  COALESCE(g.bandierine_piazzate, 0) as bandierine,
+                  EXTRACT(EPOCH FROM (p.data_fine - p.data_creazione)) as durata_secondi
               FROM partite p
               JOIN gioca_in g ON p.id_partita = g.id_partita
               WHERE g.id_utente = $1

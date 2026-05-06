@@ -126,6 +126,13 @@ const calcolaDifficolta = (larghezza, mine) => {
     return Math.round((mine / totaleCelle) * 100);
 };
 
+const formattaDurata = (secondi) => {
+    if (!secondi) return "In corso...";
+    const m = Math.floor(secondi / 60).toString().padStart(2, '0');
+    const s = Math.floor(secondi % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+};
+
 // Computed property che filtra e ordina l'array originale
 const storicoFiltrato = computed(() => {
     // 1. Filtro
@@ -242,6 +249,8 @@ const storicoFiltrato = computed(() => {
               <strong>Data:</strong> {{ new Date(partita.data_creazione).toLocaleDateString() }} - {{ new Date(partita.data_creazione).toLocaleTimeString() }}<br>
               <strong>Campo:</strong> {{ partita.larghezza }}x{{ partita.larghezza }}<br>
               <strong>Difficoltà:</strong> {{ calcolaDifficolta(partita.larghezza, partita.numero_mine) }}%<br>
+              <strong>Tempo:</strong> {{ formattaDurata(partita.durata_secondi) }}<br>
+              <strong>Bandierine:</strong> {{ partita.bandierine }}<br>
               <strong class="punti-testo">Punti Ottenuti:</strong> {{ partita.punti }}
             </div>
             

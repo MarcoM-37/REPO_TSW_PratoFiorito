@@ -47,7 +47,7 @@
         <div class="div_nome_nPartite">
           <span class="rank">#{{ index + 1 }}</span>
           <h3 class="nome">{{ player.nome }}</h3>
-          <span class="n_partite">Partite: <b>{{ player.n_partite }}</b></span>
+          <span class="n_partite">Partite: <b>{{ player.n_partite }}</b> | Tempo: <b>{{ player.tempo_giocato }}</b></span>
         </div>
         <div class="div_punteggio_ratio">
           <span class="punteggio">{{ player.punteggio }} <span>pt</span></span>

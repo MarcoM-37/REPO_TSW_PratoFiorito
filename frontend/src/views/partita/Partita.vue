@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 // Importiamo lo stato globale (es. tema visivo e impostazioni)
 import { skin } from '../../ambiente.js';
@@ -44,6 +44,12 @@ const datiFinePartita = ref({
     storico: false
 });
 
+// Variabili per HUD e cronometro
+const tempoGiocato = ref(0);
+let timerIntervallo = null;
+const bandierinePiazzate = ref(0);
+const puntiAttuali = ref(0);
+
 // Funzione per inviare il messaggio:
 const inviaMessaggio = () => {
   // Controlliamo che il testo non sia vuoto e che l'utente esista in memoria
@@ -59,6 +65,28 @@ const inviaMessaggio = () => {
     
     // Svuotiamo la casella di testo
     nuovoMessaggio.value = ""; 
+  }
+};
+
+// Formatta il tempo in MM:SS
+const tempoFormattato = computed(() => {
+  const minuti = Math.floor(tempoGiocato.value / 60).toString().padStart(2, '0');
+  const secondi = (tempoGiocato.value % 60).toString().padStart(2, '0');
+  return `${minuti}:${secondi}`;
+});
+
+const avviaTimer = () => {
+  if (!timerIntervallo) {
+    timerIntervallo = setInterval(() => {
+      tempoGiocato.value++;
+    }, 1000);
+  }
+};
+
+const fermaTimer = () => {
+  if (timerIntervallo) {
+    clearInterval(timerIntervallo);
+    timerIntervallo = null;
   }
 };
 
@@ -97,10 +125,12 @@ onMounted(() => {
   socket.on('aggiorna_griglia', (nuovaGriglia) => {
     griglia.value = nuovaGriglia; // Vue aggiorna automaticamente l'HTML
     caricamento.value = false;    // Nascondiamo la scritta di caricamento
+    avviaTimer();
   });
 
   // Caso C: Qualcuno ha vinto o ha calpestato una mina
   socket.on('partita_terminata', (dati) => {
+    fermaTimer();
     // 1. Aggiorniamo la griglia visibile
     if (dati.griglia) {
         griglia.value = dati.griglia; 
@@ -145,6 +175,13 @@ onMounted(() => {
       const area = document.querySelector('.area-messaggi');
       if (area) area.scrollTop = area.scrollHeight;
     }, 50);
+  });
+
+  socket.on('sync_hud', (datiSync) => {
+    tempoGiocato.value = datiSync.tempo;
+    puntiAttuali.value = datiSync.punti;
+    bandierinePiazzate.value = datiSync.bandierine;
+    avviaTimer(); // Riparte contando dai secondi corretti
   });
 });
 
@@ -193,6 +230,10 @@ const scopriCella = (x, y) => {
 // Invocata al click destro del mouse
 const mettiBandierina = (x, y) => {
   if (!sessione.utente) return;
+  // Aumentiamo o diminuiamo il contatore locale (se la cella non è già scoperta)
+  if (!griglia.value[y][x].isRevealed) {
+    griglia.value[y][x].isFlagged ? bandierinePiazzate.value-- : bandierinePiazzate.value++;
+  }
   socket.emit('mossa_utente', {
     idPartita: idStanza,
     x: x,
@@ -212,6 +253,13 @@ const mettiBandierina = (x, y) => {
 
     <div v-else id="zonaPartita" class="finestra">
       
+      <!-- HUD delle statistiche in tempo reale -->
+      <div id="hud-statistiche">
+        <div class="stat-box"><span class="icona">⏱️</span><span class="valore">{{ tempoFormattato }}</span></div>
+        <div class="stat-box"><span class="icona">💰</span><span class="valore">{{ puntiAttuali }}</span></div>
+        <div class="stat-box"><span class="icona">🚩</span><span class="valore">{{ bandierinePiazzate }}</span></div>
+      </div>
+
       <div class="grid-container">
         <div v-for="(riga, y) in griglia" :key="'riga-'+y" class="riga-flex">
           
@@ -542,4 +590,22 @@ const mettiBandierina = (x, y) => {
   border-radius: 6px;
 }
 .btn-home:hover { background-color: #0056b3; }
+
+#hud-statistiche {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
 </style>

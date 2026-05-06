@@ -13,6 +13,7 @@ router.get('/classifica', async (req, res) => {
                 u.valuta AS punteggio,
                 COUNT(g.id_partita) AS n_partite,
                 COALESCE(SUM(CASE WHEN p.stato = 'vinta' THEN 1 ELSE 0 END), 0) AS vittorie
+                COALESCE(SUM(EXTRACT(EPOCH FROM (p.data_fine - p.data_creazione))), 0) AS tempo_totale
              FROM utenti u
              LEFT JOIN gioca_in g ON u.id_utente = g.id_utente
              LEFT JOIN partite p ON g.id_partita = p.id_partita AND p.stato IN ('vinta', 'persa')
@@ -37,11 +38,16 @@ router.get('/classifica', async (req, res) => {
                  ratio = (vittorie / sconfitte).toFixed(2);
              }
 
+             const ore = Math.floor(user.tempo_totale / 3600);
+             const minuti = Math.floor((user.tempo_totale % 3600) / 60);
+             const tempoFormattato = `${ore}h ${minuti}m`;
+
              return {
                  nome: user.nome,
                  punteggio: user.punteggio,
                  n_partite: partiteFinite,
-                 ratio: ratio
+                 ratio: ratio,
+                 tempo_giocato: tempoFormattato
              };
          });
 
