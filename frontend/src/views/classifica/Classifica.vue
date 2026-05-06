@@ -48,7 +48,7 @@
         :class="{ 'first_player': index === 0 , 'second_player': index === 1, 'third_player': index === 2}"
       >
         <div class="div_nome_nPartite">
-          <span class="rank">#{{ index + 2 }}</span>
+          <span class="rank">#{{ index + 1 }}</span>
           <h3 class="nome">{{ player.nome }}</h3>
           <span class="n_partite">Partite: <b>{{ player.n_partite }}</b></span>
         </div>
@@ -67,7 +67,6 @@
     max-width: 600px;
     margin: 5vh auto;
     padding: 30px;
-    background-color: var(--bg-color);
   }
 
   h2 {
