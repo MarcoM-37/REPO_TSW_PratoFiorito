@@ -83,6 +83,36 @@ app.use('/api/stats', statsRoutes);
 const shopRoutes = require('./routes/shop');
 app.use('/api/shop', shopRoutes);
 
+// Funzione helper per salvare i progressi (Punti, Bandierine, Tempo)
+const salvaProgressiGiocatore = async (idPartita, idUtente) => {
+    const partita = activeGames[idPartita];
+    if (partita && partita.giocatori[idUtente]) {
+        const datiGioc = partita.giocatori[idUtente];
+        
+        try {
+            let tempoPassato = 0;
+            if (datiGioc.timestampIngresso) {
+                tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
+            }
+
+            // Aggiornamento DB
+            await db.query(
+                'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1, bandierine_piazzate = $2, secondi_giocati = COALESCE(secondi_giocati, 0) + $3 WHERE id_partita = $4 AND id_utente = $5',
+                [datiGioc.punti, datiGioc.bandierine, tempoPassato, partita.uuid, idUtente]
+            );
+
+            // Aggiornamento RAM per persistenza durante la stessa sessione
+            datiGioc.tempoAccumulato += tempoPassato;
+            datiGioc.punti = 0; // Reset dei punti parziali salvati
+            datiGioc.timestampIngresso = null; // Fermiamo il cronometro
+            
+            console.log(`Salvataggio completato per ${datiGioc.username} nella partita ${idPartita}`);
+        } catch (err) {
+            console.error("Errore salvataggio progressi:", err);
+        }
+    }
+};
+
 // Quando un nuovo client si connette al server
 io.on('connection', (socket) => {
   console.log(`Nuovo giocatore connesso! ID: ${socket.id}`);
@@ -318,22 +348,46 @@ io.on('connection', (socket) => {
       socket.join(idPartita);
       console.log(`${username} è entrato nella partita ${idPartita}`);
       
-      // Registriamo l'utente nell'oggetto usando il suo ID
-      // Se non esiste ancora in questa sessione attiva, lo creiamo partendo da 0 punti
+      // Recuperiamo i progressi precedenti dal DB (se esistono) per chi si riconnette
+      let tempoDB = 0, puntiDB = 0, bandierineDB = 0;
+      if (uuidPartita) {
+          try {
+              const resG = await db.query('SELECT punteggio_partita, bandierine_piazzate, secondi_giocati FROM gioca_in WHERE id_partita = $1 AND id_utente = $2', [uuidPartita, idUtente]);
+              if (resG.rows.length > 0) {
+                  puntiDB = resG.rows[0].punteggio_partita || 0;
+                  bandierineDB = resG.rows[0].bandierine_piazzate || 0;
+                  tempoDB = resG.rows[0].secondi_giocati || 0;
+              }
+          } catch(err) { console.error("Errore recupero stats personali:", err); }
+      }
+
+      // Registriamo l'utente nell'oggetto in RAM
       if (!activeGames[idPartita].giocatori[idUtente]) {
           activeGames[idPartita].giocatori[idUtente] = {
               username: username,
-              punti: 0,
-              bandierine: 0
+              punti: puntiDB,
+              bandierine: bandierineDB,
+              tempoAccumulato: tempoDB,
+              timestampIngresso: Date.now(),
+              socketId: socket.id
           };
+      } else {
+          // Si sta riconnettendo: aggiorniamo la scheda attiva
+          activeGames[idPartita].giocatori[idUtente].socketId = socket.id;
+          
+          // Riavvia il timer SOLO se si era fermato per una disconnessione pulita
+          if (!activeGames[idPartita].giocatori[idUtente].timestampIngresso) {
+              activeGames[idPartita].giocatori[idUtente].timestampIngresso = Date.now();
+          }
       }
+      
       socket.datiUtente = { idPartita, idUtente, username };
       
       io.to(idPartita).emit('messaggio_sistema', `${username} si è unito alla partita!`);
       socket.emit('aggiorna_griglia', activeGames[idPartita].grid);
       socket.emit('storico_chat', activeGames[idPartita].messaggi);
       socket.emit('sync_hud', { 
-        tempo: Math.floor((Date.now() - activeGames[idPartita].inizio) / 1000), 
+        tempo: Math.floor((Date.now() - activeGames[idPartita].giocatori[idUtente].timestampIngresso) / 1000) + activeGames[idPartita].giocatori[idUtente].tempoAccumulato, 
         punti: activeGames[idPartita].giocatori[idUtente].punti,
         bandierine: activeGames[idPartita].giocatori[idUtente].bandierine
       });
@@ -389,7 +443,7 @@ io.on('connection', (socket) => {
       }
       // Inviamo l'aggiornamento
       socket.emit('sync_hud', { 
-          tempo: Math.floor((Date.now() - partita.inizio) / 1000), 
+          tempo: Math.floor((Date.now() - partita.giocatori[dati.idUtente].timestampIngresso) / 1000) + partita.giocatori[dati.idUtente].tempoAccumulato, 
           punti: partita.giocatori[dati.idUtente].punti,
           bandierine: partita.giocatori[dati.idUtente].bandierine
       });
@@ -445,15 +499,19 @@ io.on('connection', (socket) => {
             console.error("Errore fine partita Sconfitta:", err);
         }
 
-        // Salva le bandierine finali per tutti i giocatori
+        // Salva le bandierine finali E il tempo per tutti i giocatori
         for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
+            let tempoPassato = 0;
+            if (datiGioc.timestampIngresso) { // Se è connesso
+                tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
+            }
             try {
                 await db.query(
-                    'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
-                    [datiGioc.bandierine, partita.uuid, idGioc]
+                    'UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4',
+                    [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc]
                 );
             } catch (err) {
-                console.error("Errore salvataggio bandierine (Sconfitta):", err);
+                console.error("Errore salvataggio finali:", err);
             }
         }
         
@@ -486,8 +544,9 @@ io.on('connection', (socket) => {
               if (puntiGuadagnati > 0){
                   try {
                     partita.giocatori[dati.idUtente].punti += puntiGuadagnati;
+                    // Inviamo l'aggiornamento
                     socket.emit('sync_hud', { 
-                        tempo: Math.floor((Date.now() - partita.inizio) / 1000), 
+                        tempo: Math.floor((Date.now() - partita.giocatori[dati.idUtente].timestampIngresso) / 1000) + partita.giocatori[dati.idUtente].tempoAccumulato, 
                         punti: partita.giocatori[dati.idUtente].punti,
                         bandierine: partita.giocatori[dati.idUtente].bandierine
                     });
@@ -551,15 +610,19 @@ io.on('connection', (socket) => {
           console.error("Errore fine partita Vittoria:", err);
       }
 
-      // Salva le bandierine finali per tutti i giocatori
+      // Salva le bandierine finali E il tempo per tutti i giocatori
       for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
+          let tempoPassato = 0;
+          if (datiGioc.timestampIngresso) { // Se è connesso
+              tempoPassato = Math.floor((Date.now() - datiGioc.timestampIngresso) / 1000);
+          }
           try {
               await db.query(
-                  'UPDATE gioca_in SET bandierine_piazzate = $1 WHERE id_partita = $2 AND id_utente = $3',
-                  [datiGioc.bandierine, partita.uuid, idGioc]
+                  'UPDATE gioca_in SET bandierine_piazzate = $1, secondi_giocati = COALESCE(secondi_giocati, 0) + $2 WHERE id_partita = $3 AND id_utente = $4',
+                  [datiGioc.bandierine, tempoPassato, partita.uuid, idGioc]
               );
           } catch (err) {
-              console.error("Errore salvataggio bandierine (Vittoria):", err);
+              console.error("Errore salvataggio finali:", err);
           }
       }
 
@@ -616,39 +679,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Gestione della disconnessione
-  socket.on('disconnect', async () => {
-    console.log(`Giocatore disconnesso: ${socket.id}`);
-    
-    // Controlliamo se avevamo messo l'etichetta a questo utente
-    if (socket.datiUtente) {
-        const { idPartita, idUtente, username } = socket.datiUtente;
-        const partita = activeGames[idPartita];
+  socket.on('lascia_partita', async (dati) => {
+        await salvaProgressiGiocatore(dati.idPartita, dati.idUtente);
+    });
 
-        // Se la partita è ancora attiva in RAM
-        if (partita && partita.giocatori[idUtente]) {
-            const puntiDaSalvare = partita.giocatori[idUtente].punti;
-
-            // RIMOSSO l'if(puntiDaSalvare > 0) per garantire il salvataggio delle bandierine
-            try {
-                // Salviamo i punti parziali e le bandierine nel database
-                await db.query(
-                    'UPDATE gioca_in SET punteggio_partita = COALESCE(punteggio_partita, 0) + $1, bandierine_piazzate = $2 WHERE id_partita = $3 AND id_utente = $4',
-                    [puntiDaSalvare, partita.giocatori[idUtente].bandierine, partita.uuid, idUtente]
-                );
-
-                // Azzeriamo i punti in RAM (così se la partita finisce non duplichiamo)
-                partita.giocatori[idUtente].punti = 0;
-                
-            } catch (err) {
-                console.error("Errore salvataggio su disconnessione:", err);
+    socket.on('disconnect', async () => {
+        if (socket.datiUtente) {
+            const { idPartita, idUtente, username } = socket.datiUtente;
+            if (activeGames[idPartita] && activeGames[idPartita].giocatori[idUtente]) {
+                // Verifichiamo che la scheda che si scollega sia quella attiva (Fix Race Condition)
+                if (activeGames[idPartita].giocatori[idUtente].socketId === socket.id) {
+                    await salvaProgressiGiocatore(idPartita, idUtente);
+                    io.to(idPartita).emit('messaggio_sistema', `${username} si è scollegato.`);
+                }
             }
-
-            // Avvisiamo gli altri giocatori rimasti
-            io.to(idPartita).emit('messaggio_sistema', `${username} ha abbandonato la partita.`);
         }
-    }
-  });
+    });
 
   // Gestione richiesta storico personale
   socket.on('richiedi_storico', async (idUtente) => {
@@ -664,7 +710,7 @@ io.on('connection', (socket) => {
                   p.numero_mine, 
                   COALESCE(g.punteggio_partita, 0) as punti,
                   COALESCE(g.bandierine_piazzate, 0) as bandierine,
-                  EXTRACT(EPOCH FROM (p.data_fine - p.data_creazione)) as durata_secondi
+                  COALESCE(g.secondi_giocati, 0) as durata_secondi
               FROM partite p
               JOIN gioca_in g ON p.id_partita = g.id_partita
               WHERE g.id_utente = $1

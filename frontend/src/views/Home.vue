@@ -127,9 +127,10 @@ const calcolaDifficolta = (larghezza, mine) => {
 };
 
 const formattaDurata = (secondi) => {
-    if (!secondi) return "In corso...";
-    const m = Math.floor(secondi / 60).toString().padStart(2, '0');
-    const s = Math.floor(secondi % 60).toString().padStart(2, '0');
+    // Se non ci sono secondi (es. 0 o partita appena iniziata), visualizziamo 00:00 anziché "In corso..."
+    const sec = Math.max(0, Number(secondi || 0)); 
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
 };
 

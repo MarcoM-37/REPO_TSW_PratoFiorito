@@ -200,6 +200,14 @@ const chiudiE_TornaHome = () => {
 
 // Ciclo di vita alla chiusura del componente
 onUnmounted(() => {
+  // Avvisiamo il server che stiamo uscendo dalla pagina (non dalla connessione)
+  if (sessione.utente) {
+    socket.emit('lascia_partita', { 
+      idPartita: idStanza, 
+      idUtente: sessione.utente.id_utente 
+    });
+  }
+
   // Rimuovere i "listener" quando l'utente cambia pagina.
   // Altrimenti, tornando su questa pagina, avremmo eventi duplicati in ascolto.
   socket.off('aggiorna_griglia');
@@ -207,6 +215,7 @@ onUnmounted(() => {
   socket.off('partita_terminata');
   socket.off('storico_chat');
   socket.off('nuovo_messaggio_chat');
+  socket.off('sync_hud');
 });
 
 //Funzioni di interazione con l'utente
