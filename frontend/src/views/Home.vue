@@ -59,6 +59,11 @@ const VaiInventario = () => {
   router.push("/inventario")
 }
 
+// Funzione del pulsante per andare agli obiettivi
+const VaiObiettivi = () => {
+  router.push("/obiettivi")
+}
+
 const VaiClassifica = () => {
   router.push("/classifica")
 }
@@ -158,7 +163,7 @@ const storicoFiltrato = computed(() => {
       <button v-if="sessione.utente" @click="ApriStorico">Storico Partite</button>
       <button @click="VaiInventario">Inventario</button>
       <button @click="VaiShop">Shop</button>
-      <button>Obiettivi</button>
+      <button @click="VaiObiettivi">Obiettivi</button>
       <button @click="VaiClassifica">Classifica</button>
     </div>
 
