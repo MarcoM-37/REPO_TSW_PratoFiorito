@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { skin } from '../../ambiente.js'
 // Importiamo la connessione al server WebSocket precedentemente inizializzata
 import { socket } from '../../socket.js'
-import { sessione, notifica } from '../../ambiente.js'
+import { sessione, notifica, sfx } from '../../ambiente.js'
 
 // Inizializzazione routing
 const route = useRoute()
@@ -136,6 +136,16 @@ onMounted(() => {
       griglia.value = dati.griglia
     }
 
+    // Se hai perso, riproduciamo l'esplosione
+    if (dati.esito === 'sconfitta' && !dati.storico) {
+      sfx.play('esplosione.wav')
+    }
+
+    // Se hai vinto, riproduciamo la melodia
+    if (dati.esito === 'vittoria' && !dati.storico) {
+      sfx.play('vittoria.wav')
+    }
+
     // 2. Salviamo i dati per il popup
     datiFinePartita.value.esito = dati.esito
     datiFinePartita.value.classifica = dati.classifica || []
@@ -223,8 +233,23 @@ onUnmounted(() => {
 // Invocata al click su una cella
 const scopriCella = (x, y) => {
   if (!sessione.utente) return // Sicurezza extra
+
+  // Se la cella è già scoperta, ignoriamo il click per evitare suoni a vuoto
+  if (griglia.value[y][x].isRevealed) return
+
   // Controlliamo quale strumento l'utente ha selezionato dalla bottoniera
   const azione = modalitaBandierina.value ? 'bandierina' : 'scopri'
+
+  // Riproduciamo il suono adatto prima di inviare al server
+  if (azione === 'scopri') {
+    // Se sappiamo già che c'è una mina, non suoniamo il rumorino "scopri".
+    // Lasciamo spazio al suono dell'esplosione che arriverà dal server un istante dopo.
+    if (!griglia.value[y][x].isMine) {
+      sfx.play('scopri')
+    }
+  } else {
+    sfx.play('bandierina')
+  }
 
   // Il client invia solo la mossa al server
   socket.emit('mossa_utente', {
@@ -239,6 +264,8 @@ const scopriCella = (x, y) => {
 // Invocata al click destro del mouse
 const mettiBandierina = (x, y) => {
   if (!sessione.utente) return
+  if (griglia.value[y][x].isRevealed) return
+  sfx.play('bandierina.wav')
   // Aumentiamo o diminuiamo il contatore locale (se la cella non è già scoperta)
   if (!griglia.value[y][x].isRevealed) {
     griglia.value[y][x].isFlagged ? bandierinePiazzate.value-- : bandierinePiazzate.value++

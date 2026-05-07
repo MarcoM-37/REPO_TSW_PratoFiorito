@@ -192,30 +192,21 @@ const storicoFiltrato = computed(() => {
             <button
               class="btn-scelta"
               :class="{ attivo: presetDimensione === 10 && !modalitaPersonalizzata }"
-              @click="
-                presetDimensione = 10
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDimensione = 10), (modalitaPersonalizzata = false))"
             >
               Piccolo (10x10)
             </button>
             <button
               class="btn-scelta"
               :class="{ attivo: presetDimensione === 25 && !modalitaPersonalizzata }"
-              @click="
-                presetDimensione = 25
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDimensione = 25), (modalitaPersonalizzata = false))"
             >
               Medio (25x25)
             </button>
             <button
               class="btn-scelta"
               :class="{ attivo: presetDimensione === 50 && !modalitaPersonalizzata }"
-              @click="
-                presetDimensione = 50
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDimensione = 50), (modalitaPersonalizzata = false))"
             >
               Grande (50x50)
             </button>
@@ -226,30 +217,21 @@ const storicoFiltrato = computed(() => {
             <button
               class="btn-scelta"
               :class="{ attivo: presetDifficolta === 10 && !modalitaPersonalizzata }"
-              @click="
-                presetDifficolta = 10
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDifficolta = 10), (modalitaPersonalizzata = false))"
             >
               Facile (10%)
             </button>
             <button
               class="btn-scelta"
               :class="{ attivo: presetDifficolta === 15 && !modalitaPersonalizzata }"
-              @click="
-                presetDifficolta = 15
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDifficolta = 15), (modalitaPersonalizzata = false))"
             >
               Medio (15%)
             </button>
             <button
               class="btn-scelta"
               :class="{ attivo: presetDifficolta === 20 && !modalitaPersonalizzata }"
-              @click="
-                presetDifficolta = 20
-                modalitaPersonalizzata = false
-              "
+              @click="((presetDifficolta = 20), (modalitaPersonalizzata = false))"
             >
               Difficile (20%)
             </button>

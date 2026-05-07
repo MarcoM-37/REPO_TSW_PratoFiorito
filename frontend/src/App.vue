@@ -1,6 +1,6 @@
 <script setup>
 import Header from '@/components/Header.vue'
-import { skin, notifica, toast, sessione } from '@/ambiente.js'
+import { skin, notifica, toast, sessione, sfx } from '@/ambiente.js'
 import { socket } from '@/socket.js'
 import { onMounted } from 'vue'
 
@@ -13,7 +13,18 @@ onMounted(() => {
 
   // 2. Restiamo in ascolto se il server ci sblocca un obiettivo
   socket.on('obiettivo_sbloccato', (dati) => {
+    // 1. Facciamo partire il suono
+    sfx.play('obiettivo.wav')
+
+    // 2. Mostriamo il popup a schermo
     toast.mostra(dati.titolo, dati.descrizione)
+  })
+
+  document.addEventListener('click', (evento) => {
+    // Se l'elemento cliccato (o il suo contenitore) è un bottone, fai click
+    if (evento.target.closest('button')) {
+      sfx.play('click.wav')
+    }
   })
 })
 </script>

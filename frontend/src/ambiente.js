@@ -104,3 +104,21 @@ export const toast = reactive({
     this.visibile = false
   },
 })
+
+// Gestore audio
+export const sfx = reactive({
+  attivo: true, // Utile per creare un tasto "Muta" nelle impostazioni in futuro
+  volumeGenerale: 0.5,
+
+  play(nomeSuono) {
+    if (!this.attivo) return
+
+    // Istanziamento rapido: permette a più suoni uguali di sovrapporsi se clicchi veloce
+    const audio = new Audio(`/audio/${nomeSuono}`)
+    audio.volume = this.volumeGenerale
+
+    // Il catch intercetta l'errore che i browser danno se provi a far partire
+    // un audio prima che l'utente abbia interagito con la pagina
+    audio.play().catch((err) => console.warn('Riproduzione audio bloccata dal browser', err))
+  },
+})
