@@ -6,6 +6,7 @@ import { skin } from '../../ambiente.js'
 // Importiamo la connessione al server WebSocket precedentemente inizializzata
 import { socket } from '../../socket.js'
 import { sessione, notifica, sfx } from '../../ambiente.js'
+import Loading from '../../components/Loading.vue'
 
 // Inizializzazione routing
 const route = useRoute()
@@ -282,12 +283,8 @@ const mettiBandierina = (x, y) => {
 
 <template>
   <div id="main">
-    <div
-      v-if="caricamento"
-      style="font-size: 2rem; color: #333; text-align: center; padding-top: 20%"
-    >
-      Connessione alla stanza {{ idStanza }} in corso...
-    </div>
+
+    <Loading v-if="caricamento" messaggio="Connessione alla stanza idStanza.value"></Loading>
 
     <div v-else id="zonaPartita" class="finestra">
       <!-- HUD delle statistiche in tempo reale -->

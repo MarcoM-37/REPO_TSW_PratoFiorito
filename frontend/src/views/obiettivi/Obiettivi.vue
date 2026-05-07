@@ -1,13 +1,16 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { sessione } from '../../ambiente.js'
+import Loading from '../../components/Loading.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const obiettiviRaggiunti = ref([])
 const obiettiviNonRaggiunti = ref([])
 const errore = ref(null)
+const caricamento = ref(false)
 
 const caricaObiettivi = async () => {
+  caricamento.value= true
   try {
     const token = localStorage.getItem('token_campo_minato')
 
@@ -29,6 +32,8 @@ const caricaObiettivi = async () => {
   } catch (err) {
     errore.value = err.message
     console.error(err)
+  } finally {
+    caricamento.value = false
   }
 }
 
@@ -37,7 +42,10 @@ onMounted(caricaObiettivi)
 
 <template>
   <div id="main">
-    <div id="div_obiettivi" class="finestra">
+
+    <Loading v-if="caricamento" messaggio="Caricamento Obiettivi"></Loading>
+
+    <div v-else id="div_obiettivi" class="finestra">
       <div id="div_obiettivi_raggiunti">
         <h2>Obiettivi Completati ✅</h2>
 

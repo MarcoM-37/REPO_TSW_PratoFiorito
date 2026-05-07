@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
+import Loading from '@/components/Loading.vue'
 
 // Recupera l'indirizzo (locale o online) dal file .env
 const API_URL = import.meta.env.VITE_SOCKET_URL
@@ -15,8 +16,10 @@ const VaiSignUp = () => {
 
 const email = ref('')
 const password = ref('')
+const caricamento = ref(false)
 
 const gestisciLogin = async () => {
+  caricamento.value = true 
   try {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
@@ -43,6 +46,8 @@ const gestisciLogin = async () => {
   } catch (err) {
     console.error('Errore di connessione:', err)
     notifica.mostra('Impossibile connettersi al server.')
+  } finally {
+    caricamento.value = false
   }
 }
 </script>
@@ -51,7 +56,10 @@ const gestisciLogin = async () => {
 
 <template>
   <div id="main">
-    <div id="finestraLogin" class="finestra">
+
+    <Loading v-if="caricamento" messaggio="Login in corso..."></Loading>
+
+    <div v-else id="finestraLogin" class="finestra">
       <form @submit.prevent="gestisciLogin">
         <div id="div_email">
           <label for="email">Email: </label> <br />

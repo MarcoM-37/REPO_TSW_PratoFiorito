@@ -2,11 +2,13 @@
 import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { skin, sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
+import Loading from '../../components/Loading.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaOggetti = ref([])
 const listaAcquisti = ref([]) //contiene gli id di tutti gli item acquistati, di tali item non verrà visualizzato il prezzo ma solo "ACQUISTATO"
 const errore = ref(null)
+const caricamento = ref(false)
 
 const temi = computed(() => listaOggetti.value.filter((p) => p.tipo === 'tema'))
 const sfondi = computed(() => listaOggetti.value.filter((p) => p.tipo === 'sfondo'))
@@ -27,6 +29,7 @@ const inProva = reactive({
 })
 
 const caricaOggettiAcquistati = async () => {
+  caricamento.value = true
   try {
     // Recuperiamo il token di sicurezza dal disco
     const token = localStorage.getItem('token_campo_minato')
@@ -47,10 +50,13 @@ const caricaOggettiAcquistati = async () => {
   } catch (err) {
     errore.value = err.message
     console.error(err)
+  } finally {
+    caricamento.value = false
   }
 }
 
 const caricaShop = async () => {
+  caricamento.value = true
   try {
     const response = await fetch(`${API_URL}/api/shop/oggetti`)
     if (!response.ok) throw new Error('Errore nel caricamento shop')
@@ -60,6 +66,8 @@ const caricaShop = async () => {
   } catch (err) {
     errore.value = err.message
     console.error(err)
+  } finally {
+    caricamento.value = false
   }
 }
 
@@ -191,7 +199,10 @@ onMounted(() => {
 
 <template>
   <div id="main">
-    <div id="finestra_shop" class="finestra">
+
+    <Loading v-if="caricamento" messaggio="Caricamento shop..."></Loading>
+
+    <div v-else id="finestra_shop" class="finestra">
       <div id="div_soldi">
         <!-- Controlla se l'utente esiste, altrimenti mostra 0 -->
         <label>Saldo disponibile : {{ sessione.utente ? sessione.utente.valuta : 0 }} 💰</label>
