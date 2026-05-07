@@ -136,4 +136,14 @@ h3 {
   font-size: 14px;
   color: color-mix(in srgb, var(--bg-color), black 60%);
 }
+
+@media (max-width: 800px) {
+  #div_obiettivi {
+    width: 80%;
+    padding: 15px;
+  }
+  h3 { letter-spacing: 0px; font-size : 18px;}
+  .raggiunto:hover { border-left: solid 0px green; }
+  .nonRaggiunto:hover { border-left: solid 0px red; }
+}
 </style>

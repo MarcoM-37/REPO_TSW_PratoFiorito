@@ -175,7 +175,7 @@ h2 {
 
 @media (max-width: 800px) {
   #div_classifica {
-    width: 90%;
+    width: 80%;
     padding: 15px;
   }
   .nome {
