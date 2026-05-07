@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { sessione } from '../../ambiente.js'
 import Loading from '../../components/Loading.vue'
+import Errore from '../../components/Errore.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const obiettiviRaggiunti = ref([])
@@ -10,7 +11,8 @@ const errore = ref(null)
 const caricamento = ref(false)
 
 const caricaObiettivi = async () => {
-  caricamento.value= true
+  caricamento.value = true
+  errore.value = null
   try {
     const token = localStorage.getItem('token_campo_minato')
 
@@ -44,6 +46,8 @@ onMounted(caricaObiettivi)
   <div id="main">
 
     <Loading v-if="caricamento" messaggio="Caricamento Obiettivi"></Loading>
+
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaObiettivi"></Errore>
 
     <div v-else id="div_obiettivi" class="finestra">
       <div id="div_obiettivi_raggiunti">

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { skin, sessione, notifica } from '../../ambiente.js'
 import Loading from '../../components/Loading.vue'
+import Errore from '../../components/Errore.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaAcquisti = ref([])
@@ -13,7 +14,8 @@ const sfondi = computed(() => listaAcquisti.value.filter((p) => p.tipo === 'sfon
 const icone = computed(() => listaAcquisti.value.filter((p) => p.tipo === 'icona'))
 
 const caricaOggettiAcquistati = async () => {
-  caricamento.value=true
+  caricamento.value = true
+  errore.value = null
   try {
     // Recuperiamo il token di sicurezza
     const token = localStorage.getItem('token_campo_minato')
@@ -55,6 +57,8 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
   <div id="main">
 
     <Loading v-if="caricamento" messaggio="Caricamento inventario..."></Loading>
+
+    <Errore v-else-if="errore" :messaggio="errore"  @riprova="caricaClassifica"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
       

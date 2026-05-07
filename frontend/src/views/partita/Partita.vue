@@ -284,7 +284,7 @@ const mettiBandierina = (x, y) => {
 <template>
   <div id="main">
 
-    <Loading v-if="caricamento" messaggio="Connessione alla stanza idStanza.value"></Loading>
+    <Loading v-if="caricamento" :messaggio=" 'Connessione alla stanza ' + idStanza + '...' "></Loading>
 
     <div v-else id="zonaPartita" class="finestra">
       <!-- HUD delle statistiche in tempo reale -->

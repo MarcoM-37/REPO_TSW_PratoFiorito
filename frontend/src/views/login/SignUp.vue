@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
 import Loading from '../../components/Loading.vue'
+import Errore from '../../components/Errore.vue'
 
 // Recupera l'indirizzo (locale o online) dal file .env
 const API_URL = import.meta.env.VITE_SOCKET_URL
@@ -19,7 +20,17 @@ const username = ref('')
 const email = ref('')
 const password = ref('')
 const confermaPassword = ref('')
+
+const errore = ref(null)
 const caricamento = ref(false)
+
+const refreshSignup = () => {
+  username.value = ''
+  email.value = ''
+  password.value = ''
+  confermaPassword.value = ''
+  errore.value = null
+}
 
 const gestisciSignup = async () => {
   // 1. Controllo validità password lato client
@@ -57,7 +68,7 @@ const gestisciSignup = async () => {
     }
   } catch (err) {
     console.error('Errore di connessione:', err)
-    notifica.mostra('Impossibile connettersi al server. Riprova più tardi.')
+    errore.value = err.message
   } finally {
     caricamento.value = false
   }
@@ -68,6 +79,8 @@ const gestisciSignup = async () => {
   <div id="main">
 
     <Loading v-if="caricamento" messaggio="Registrazione in corso..."></Loading>
+
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="refreshSignup"></Errore>
 
     <div v-else id="finestraSignup" class="finestra">
       <form @submit.prevent="gestisciSignup">

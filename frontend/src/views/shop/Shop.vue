@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { skin, sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
 import Loading from '../../components/Loading.vue'
+import Errore from '../../components/Errore.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaOggetti = ref([])
@@ -188,19 +189,25 @@ onUnmounted(() => {
   if (inProva.icona) ripristina('icona')
 })
 
-onMounted(() => {
+const avvioShop = async () => {
+  errore.value = null
   caricaShop()
   if (sessione.utente) {
     caricaOggettiAcquistati()
     aggiornaSaldo()
   }
-})
+}
+
+onMounted(avvioShop)
+
 </script>
 
 <template>
   <div id="main">
 
     <Loading v-if="caricamento" messaggio="Caricamento shop..."></Loading>
+
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="avvioShop"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
       <div id="div_soldi">

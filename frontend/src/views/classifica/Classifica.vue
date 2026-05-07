@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { socket } from '../../socket.js'
 import { sessione } from '../../ambiente.js'
 import Loading from '../../components/Loading.vue'
+import Errore from '../../components/Errore.vue'
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaClassifica = ref([])
@@ -10,7 +11,8 @@ const errore = ref(null)
 const caricamento = ref(false)
 
 const caricaClassifica = async () => {
-  caricamento.value=true
+  caricamento.value = true
+  errore.value = null
   try {
     const response = await fetch(`${API_URL}/api/stats/classifica`)
     if (!response.ok) throw new Error('Errore nel caricamento classifica')
@@ -42,6 +44,8 @@ onMounted(caricaClassifica)
   <div id="main">
 
     <Loading v-if="caricamento" messaggio="Caricamento classifica..."></Loading>
+
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
 
     <div v-else id="div_classifica" class="finestra">
 
