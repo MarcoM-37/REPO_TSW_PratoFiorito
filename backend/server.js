@@ -747,12 +747,13 @@ io.on("connection", (socket) => {
 
   // Gestione della Chat
   socket.on("invia_messaggio_chat", async (dati) => {
-    const { idPartita, idUtente, username, testo } = dati;
+    const { idPartita, idUtente, username, icona, testo } = dati;
 
     if (activeGames[idPartita]) {
       // Creiamo l'oggetto messaggio (proprio come fosse una riga del database)
       const nuovoMessaggio = {
         autore: username,
+        icona: icona || "🎭",
         testo: testo,
         ora: new Date().toLocaleTimeString([], {
           hour: "2-digit",

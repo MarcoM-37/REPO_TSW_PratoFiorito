@@ -60,6 +60,7 @@ const inviaMessaggio = () => {
       idPartita: idStanza,
       idUtente: sessione.utente.id_utente, // Fondamentale per il salvataggio nel Database
       username: sessione.utente.username, // Fondamentale per mostrare il nome nell'interfaccia degli altri
+      icona: skin.icona,
       testo: nuovoMessaggio.value,
     })
 
@@ -152,10 +153,10 @@ onMounted(() => {
     datiFinePartita.value.classifica = dati.classifica || []
     datiFinePartita.value.storico = dati.storico || false
 
-    // 3. Mostriamo il popup dopo un piccolo ritardo scenico (opzionale)
+    // 3. Mostriamo il popup dopo un piccolo ritardo scenico
     setTimeout(() => {
       modalVisibile.value = true
-    }, 500)
+    }, 1000)
   })
 
   socket.on('storico_chat', (messaggiPassati) => {
@@ -283,8 +284,10 @@ const mettiBandierina = (x, y) => {
 
 <template>
   <div id="main">
-
-    <Loading v-if="caricamento" :messaggio=" 'Connessione alla stanza ' + idStanza + '...' "></Loading>
+    <Loading
+      v-if="caricamento"
+      :messaggio="'Connessione alla stanza ' + idStanza + '...'"
+    ></Loading>
 
     <div v-else id="zonaPartita" class="finestra">
       <!-- HUD delle statistiche in tempo reale -->
@@ -353,6 +356,9 @@ const mettiBandierina = (x, y) => {
       <div class="area-messaggi">
         <div v-for="(msg, index) in storicoChat" :key="index" class="messaggio">
           <span class="ora">[{{ msg.ora }}]</span>
+
+          <span class="icona-chat">{{ msg.icona || '🎭' }}</span>
+
           <strong :class="{ 'mio-messaggio': msg.autore === sessione.utente.username }"
             >{{ msg.autore }}:</strong
           >
@@ -507,7 +513,7 @@ const mettiBandierina = (x, y) => {
   transition: right 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 1000;
 }
 
 /* Classe dinamica applicata da Vue per farla apparire */
@@ -668,5 +674,10 @@ const mettiBandierina = (x, y) => {
   font-size: 1.5rem;
   font-weight: bold;
   color: #333;
+}
+
+.icona-chat {
+  margin: 0 4px;
+  font-size: 1.1em;
 }
 </style>
