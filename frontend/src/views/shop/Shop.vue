@@ -4,6 +4,10 @@ import { skin, sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
+import SlotShopTema from '../../components/SlotShopTema.vue'
+import SlotShopSfondo from '../../components/SlotShopSfondo.vue'
+import SlotShopIcona from '../../components/SlotShopIcona.vue'
+
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaOggetti = ref([])
@@ -218,90 +222,51 @@ onMounted(avvioShop)
       <div id="div_temi">
         <h2>Temi:</h2>
         <div class="riga_oggetti">
-          <div v-for="item in temi" :key="item.id" class="slot_oggetto">
-            <div class="anteprima" :style="{ backgroundColor: item.asset_url }"></div>
-            <span>{{ item.nome }}</span>
 
-            <!-- Se non è acquistato: Mostra Prova e Acquista -->
-            <div class="azioni-item" v-if="!listaAcquisti.includes(item.id_oggetto)">
-              <!-- Il testo cambia se stiamo provando questo specifico id_oggetto -->
-              <button class="btn-prova" @click="gestisciProva(item)">
-                {{ inProva.tema === item.id_oggetto ? '↩️ Ripristina' : '👁️ Prova' }}
-              </button>
-              <button class="btn-compra" @click="effettuaAcquisto(item)">
-                💰 {{ item.prezzo }}
-              </button>
-            </div>
-
-            <!-- Se è già acquistato -->
-            <div class="azioni-item" v-else>
-              <button class="btn-prova" @click="equipaggiaOggetto(item)">✨ Equipaggia</button>
-              <span class="span_acquisto">Acquistato ✅</span>
-            </div>
-          </div>
+          <SlotShopTema 
+            v-for="item in temi" 
+            :item="item" 
+            :listaAcquisti="listaAcquisti" 
+            :inProva="inProva"
+            @prova="gestisciProva" 
+            @equipaggia="equipaggiaOggetto" 
+            @acquisto="effettuaAcquisto">
+          </SlotShopTema>
+          
         </div>
       </div>
 
       <div id="div_sfondi">
         <h2>Sfondi:</h2>
         <div class="riga_oggetti">
-          <div v-for="item in sfondi" :key="item.id" class="slot_oggetto">
-            <div
-              class="anteprima"
-              :style="{
-                backgroundImage: `url(${item.asset_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }"
-            ></div>
-            <span>{{ item.nome }}</span>
+          
+          <SlotShopSfondo
+            v-for="item in sfondi"
+            :item="item"
+            :listaAcquisti="listaAcquisti"
+            :inProva="inProva"
+            @prova="gestisciProva"
+            @equipaggia="equipaggiaOggetto"
+            @acquisto="effettuaAcquisto">
+          </SlotShopSfondo>
 
-            <!-- Se non è acquistato: Mostra Prova e Acquista -->
-            <div class="azioni-item" v-if="!listaAcquisti.includes(item.id_oggetto)">
-              <!-- Il testo cambia se stiamo provando questo specifico id_oggetto -->
-              <button class="btn-prova" @click="gestisciProva(item)">
-                {{ inProva.sfondo === item.id_oggetto ? '↩️ Ripristina' : '👁️ Prova' }}
-              </button>
-              <button class="btn-compra" @click="effettuaAcquisto(item)">
-                💰 {{ item.prezzo }}
-              </button>
-            </div>
-
-            <!-- Se è già acquistato -->
-            <div class="azioni-item" v-else>
-              <button class="btn-prova" @click="equipaggiaOggetto(item)">✨ Equipaggia</button>
-              <span class="span_acquisto">Acquistato ✅</span>
-            </div>
-          </div>
         </div>
       </div>
 
       <div id="div_icone">
         <h2>Icone:</h2>
         <div class="riga_oggetti">
-          <div v-for="item in icone" :key="item.id" class="slot_oggetto">
-            <div class="anteprima anteprima_icone">
-              {{ item.asset_url }}
-            </div>
-            <span>{{ item.nome }}</span>
+          
+          <SlotShopIcona
+            v-for="item in icone"
+            :item="item"
+            :listaAcquisti="listaAcquisti"
+            :inProva="inProva"
+            @prova="gestisciProva"
+            @equipaggia="equipaggiaOggetto"
+            @acquisto="effettuaAcquisto">
+          </SlotShopIcona>
 
-            <!-- Se non è acquistato: Mostra Prova e Acquista -->
-            <div class="azioni-item" v-if="!listaAcquisti.includes(item.id_oggetto)">
-              <!-- Il testo cambia se stiamo provando questo specifico id_oggetto -->
-              <button class="btn-prova" @click="gestisciProva(item)">
-                {{ inProva.icona === item.id_oggetto ? '↩️ Ripristina' : '👁️ Prova' }}
-              </button>
-              <button class="btn-compra" @click="effettuaAcquisto(item)">
-                💰 {{ item.prezzo }}
-              </button>
-            </div>
-
-            <!-- Se è già acquistato -->
-            <div class="azioni-item" v-else>
-              <button class="btn-prova" @click="equipaggiaOggetto(item)">✨ Equipaggia</button>
-              <span class="span_acquisto">Acquistato ✅</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -323,9 +288,7 @@ onMounted(avvioShop)
   padding: 10px;
   width: 100%;
 }
-#div_temi,
-#div_sfondi,
-#div_icone {
+#div_temi, #div_sfondi, #div_icone {
   margin: 10px 10px;
   padding: 10px 10px 0 10px;
   border-radius: 5px;
@@ -343,86 +306,6 @@ onMounted(avvioShop)
   padding-bottom: 2dvh;
 }
 
-.slot_oggetto {
-  width: 7dvw;
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  margin-top: 10px;
-  height: auto;
-}
-
-.slot_oggetto > span {
-  text-align: center;
-  font-size: 0.95rem;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-.anteprima {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  border: 2px solid #ddd;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.anteprima_icone {
-  font-size: 200%;
-  background-color: #f0f0f0;
-  user-select: none;
-}
-
-.span_acquisto {
-  font-size: 1.1rem;
-}
-
-.azioni-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: auto;
-  width: 100%;
-  align-items: center;
-}
-
-.btn-prova {
-  background-color: #ddd;
-  color: #333;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  width: 90%;
-  transition: background-color 0.2s;
-}
-
-.btn-prova:hover {
-  background-color: #ccc;
-}
-
-.btn-compra {
-  background-color: #ffd700;
-  color: #333;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 0.9rem;
-  width: 90%;
-  transition: transform 0.1s;
-}
-
-.btn-compra:hover {
-  transform: scale(1.05);
-}
 
 @media only screen and (max-width: 800px) {
   .anteprima {

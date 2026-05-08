@@ -1,0 +1,41 @@
+.slot_oggetto {
+    width: 7dvw;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    margin-top: 10px;
+    height: auto;
+}
+
+.slot_oggetto > span {
+    text-align: center;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.anteprima {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.anteprima:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.selezionato {
+    border: solid green 3px;
+}

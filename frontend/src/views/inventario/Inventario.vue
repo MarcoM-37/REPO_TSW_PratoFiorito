@@ -3,6 +3,10 @@ import { ref, onMounted, computed } from 'vue'
 import { skin, sessione, notifica } from '../../ambiente.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
+import SlotInventarioTema from '../../components/SlotInventarioTema.vue'
+import SlotInventarioSfondo from '../../components/SlotInventarioSfondo.vue'
+import SlotInventarioIcona from '../../components/SlotInventarioIcona.vue'
+
 const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaAcquisti = ref([])
@@ -65,106 +69,69 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
       <div id="div_temi">
         <h2>Temi:</h2>
         <div class="riga_oggetti">
-          <div class="slot_oggetto" id="tema_base">
-            <div
-              class="anteprima"
-              :style="{ backgroundColor: '#42b9af' }"
-              :class="{ selezionato: skin.temaPrincipale === '#42b9af' }"
-              @click="
-                attivaOggetto({
-                  id: 'tema_base',
-                  tipo: 'tema',
-                  nome: 'Verde Persiano',
-                  asset_url: '#42b9af',
-                })
-              "
-            ></div>
-            <span>Verde Persiano</span>
-            <span>(BASE)</span>
-          </div>
-          <div v-for="item in temi" :key="item.id" class="slot_oggetto">
-            <div
-              class="anteprima"
-              :style="{ backgroundColor: item.asset_url }"
-              :class="{ selezionato: skin.temaPrincipale === item.asset_url }"
-              @click="attivaOggetto(item)"
-            ></div>
-            <span>{{ item.nome }}</span>
-          </div>
+
+          <SlotInventarioTema
+            :item="{
+              'id' : 'tema_base',
+              'nome' : 'Verde Persiano (BASE)',
+              'asset_url' : '#42b9af',
+              'tipo' : 'tema'
+            }"
+            @attiva="attivaOggetto">
+          </SlotInventarioTema>
+          
+          <SlotInventarioTema
+            v-for="item in temi"
+            :item="item"
+            @attiva="attivaOggetto">
+          </SlotInventarioTema>
+
         </div>
       </div>
 
       <div id="div_sfondi">
         <h2>Sfondi:</h2>
         <div class="riga_oggetti">
-          <div class="slot_oggetto" id="sfondo_base">
-            <div
-              class="anteprima"
-              :style="{
-                backgroundImage: `url('/pattern/sfondo_base.jpg')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }"
-              :class="{ selezionato: skin.sfondoURL.includes('sfondo_base.jpg') }"
-              @click="
-                attivaOggetto({
-                  id: 'sfondo_base',
-                  tipo: 'sfondo',
-                  nome: 'Mattoncini Grigi',
-                  asset_url: '/pattern/sfondo_base.jpg',
-                })
-              "
-            ></div>
-            <span>Mattoncini Grigi</span>
-            <span>(BASE)</span>
-          </div>
-          <div v-for="item in sfondi" :key="item.id" class="slot_oggetto">
-            <div
-              class="anteprima"
-              :style="{
-                backgroundImage: `url(${item.asset_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }"
-              :class="{ selezionato: skin.sfondoURL.includes(item.asset_url) }"
-              @click="attivaOggetto(item)"
-            ></div>
-            <span>{{ item.nome }}</span>
-          </div>
+
+          <SlotInventarioSfondo
+            :item="{
+              'id' : 'sfondo_base',
+              'nome' : 'Mattoncini Grigi (BASE)',
+              'asset_url' : '/pattern/sfondo_base.jpg',
+              'tipo' : 'sfondo'
+            }"
+            @attiva="attivaOggetto">
+          </SlotInventarioSfondo>
+
+          <SlotInventarioSfondo
+            v-for="item in sfondi"
+            :item="item"
+            @attiva="attivaOggetto">
+          </SlotInventarioSfondo>
+          
         </div>
       </div>
 
       <div id="div_icone">
         <h2>Icone Profilo:</h2>
         <div class="riga_oggetti">
-          <div class="slot_oggetto" id="icona_base">
-            <div
-              class="anteprima anteprima_icone"
-              :class="{ selezionato: skin.icona === '🎭' }"
-              @click="
-                attivaOggetto({
-                  id: 'icona_base',
-                  tipo: 'icona',
-                  nome: 'Maschere',
-                  asset_url: '🎭',
-                })
-              "
-            >
-              🎭
-            </div>
-            <span>Maschere</span>
-            <span>(BASE)</span>
-          </div>
-          <div v-for="item in icone" :key="item.id" class="slot_oggetto">
-            <div
-              class="anteprima anteprima_icone"
-              :class="{ selezionato: skin.icona === item.asset_url }"
-              @click="attivaOggetto(item)"
-            >
-              {{ item.asset_url }}
-            </div>
-            <span>{{ item.nome }}</span>
-          </div>
+
+          <SlotInventarioIcona
+            :item="{
+              'id' : 'icona_base',
+              'nome' : 'Maschere (BASE)',
+              'asset_url' : '🎭',
+              'tipo' : 'icona'
+            }"
+            @attiva="attivaOggetto">
+          </SlotInventarioIcona>
+          
+          <SlotInventarioIcona
+            v-for="item in icone"
+            :item="item"
+            @attiva="attivaOggetto">
+          </SlotInventarioIcona>
+
         </div>
       </div>
     </div>
@@ -178,9 +145,7 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
   height: 80%;
 }
 
-#div_temi,
-#div_sfondi,
-#div_icone {
+#div_temi, #div_sfondi, #div_icone {
   margin: 10px 10px;
   padding: 10px 10px 0 10px;
   border-radius: 5px;
@@ -196,54 +161,6 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
     color-mix(in srgb, var(--bg-color), white 20%);
   margin-bottom: 2dvh;
   padding-bottom: 2dvh;
-}
-
-.slot_oggetto {
-  width: 7dvw;
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  margin-top: 10px;
-  height: auto;
-}
-
-.slot_oggetto > span {
-  text-align: center;
-  font-size: 0.95rem;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-.anteprima {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  border: 2px solid #ddd;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.anteprima:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.anteprima_icone {
-  font-size: 200%;
-  background-color: #f0f0f0;
-  user-select: none;
-}
-
-.selezionato {
-  border: solid green 3px;
 }
 
 @media only screen and (max-width: 800px) {
