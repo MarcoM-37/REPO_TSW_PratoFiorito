@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs"); //per maggiore sicurezza
 const jwt = require("jsonwebtoken"); //invece dei cookie
 const db = require("../db/index"); //ponte al db
+const { registraAnnuncio } = require('../services/feed');
 
 //REGISTRAZIONE
 router.post("/signup", async (req, res) => {
@@ -52,6 +53,13 @@ router.post("/signup", async (req, res) => {
         token,
         user: newUser,
       });
+
+    /*const io = req.app.get('socketio'); 
+    registraAnnuncio(io, {
+        tipo: 'nuovo_utente',
+        messaggio: `Diamo il benvenuto a ${username}! ✨`
+    });*/ //Per il feed di benvenuto
+    
   } catch (err) {
     if (err.code === "23505") {
       //Errore Chiave Duplicata di Postgres

@@ -489,7 +489,7 @@ const mettiBandierina = (x, y) => {
 /* Pulsante per aprire la chat */
 #btn-chat {
   position: fixed;
-  bottom: 20px;
+  bottom: 80px;
   right: 20px;
   padding: 15px 20px;
   font-size: 1.2rem;

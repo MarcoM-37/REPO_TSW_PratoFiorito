@@ -6,6 +6,7 @@ const path = require("path");
 const bcrypt = require("bcrypt"); // Libreria per la sicurezza delle password
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const { registraAnnuncio } = require('./services/feed'); //Per il feed
 
 // Importiamo il motore di gioco
 const gameLogic = require("./game_logic");
@@ -32,6 +33,8 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 const io = new Server(server, {
   cors: corsOptions,
 });
+
+app.set('socketio', io); //Per il feed in auth
 
 //Serve un "middleware" per le socket
 io.use((socket, next) => {
@@ -233,6 +236,16 @@ io.on("connection", (socket) => {
   controllaObiettivo(socket.user.id, "crea_account");
   // Trigger globale al login: Scansiona tutto il profilo per assegnare obiettivi retroattivi
   aggiornaProgressione(socket.user.id);
+
+  //Un ascoltatore per inciare lo storico degli annunci
+  socket.on('richiedi_annunci', async () => {
+       try {
+        const res = await db.query("SELECT * FROM global_feed ORDER BY creato_il DESC LIMIT 30");
+        socket.emit('storico_annunci', res.rows);
+       } catch (err) {
+           console.error("Errore recupero annunci: ", err);
+       }
+  });
 
   // 1. L'utente chiede di entrare/creare una partita
   socket.on("unisciti_partita", async (dati) => {
@@ -696,6 +709,13 @@ io.on("connection", (socket) => {
             `,
           [partita.uuid],
         );
+
+        
+        registraAnnuncio(io, {
+        tipo: 'vittoria',
+        messaggio: `${socket.datiUtente.username} ha appena completato con successo un campo ${partita.larghezza}x${partita.altezza}! 🏆`,
+        idUtente: dati.idUtente
+        }); //Per il feed della vittoria
 
         // Inviamo l'evento con i dati completi
         io.to(idPartita).emit("partita_terminata", {
