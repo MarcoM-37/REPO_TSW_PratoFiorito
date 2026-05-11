@@ -9,6 +9,7 @@ const API_URL = import.meta.env.VITE_SOCKET_URL
 const TornaHome = () => router.push('/')
 const VaiLogin = () => router.push('/login')
 const VaiShop = () => router.push('/shop')
+const VaiProfilo = () => router.push('/profilo')
 
 const EseguiLogout = () => {
   playerMusicale.pausa() // Fermiamo la musica se esce
@@ -112,7 +113,7 @@ const formattaTempo = (secondi) => {
 
     <div v-if="sessione.utente" class="sezione-utente">
       <label style="font-size: 30px; margin-right: 10px">{{ skin.icona }}</label>
-      <span class="nome-profilo">{{ sessione.utente.username }}</span>
+      <span class="nome-profilo" @click="VaiProfilo">{{ sessione.utente.username }}</span>
       <button @click="EseguiLogout" class="btn-header">LOG OUT</button>
     </div>
 
@@ -145,6 +146,7 @@ const formattaTempo = (secondi) => {
   font-weight: bold;
   font-size: 1.2rem;
   color: #333;
+  cursor: pointer;
 }
 
 .btn-header {
