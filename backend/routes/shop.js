@@ -21,12 +21,10 @@ router.get("/oggetti", async (req, res) => {
     });
   } catch (err) {
     console.error("Errore durante il recupero degli oggetti dello shop:", err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Errore interno del server durante il caricamento dello shop",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Errore interno del server durante il caricamento dello shop",
+    });
   }
 });
 
@@ -120,6 +118,46 @@ router.post("/acquista", auth, async (req, res) => {
   } finally {
     // Liberiamo il client per farlo usare da altri
     client.release();
+  }
+});
+
+// Rotta per equipaggiare un oggetto
+router.post("/equipaggia", auth, async (req, res) => {
+  const idUser = req.user.id;
+  const { id_oggetto, tipo } = req.body;
+
+  try {
+    let colonna = "";
+    if (tipo === "tema") colonna = "skin_attiva";
+    else if (tipo === "sfondo") colonna = "sfondo_attivo";
+    else if (tipo === "icona") colonna = "icona_attiva";
+    else return res.status(400).json({ error: "Tipo oggetto non valido" });
+
+    let valoreSql = id_oggetto;
+
+    // Se l'ID è una stringa e contiene "_base", significa che l'utente vuole l'oggetto di default (Togliamo l'ID)
+    if (typeof id_oggetto === "string" && id_oggetto.includes("_base")) {
+      valoreSql = null;
+    } else {
+      // Verifica che l'utente possieda effettivamente l'oggetto
+      const check = await db.query(
+        "SELECT 1 FROM inventario WHERE id_utente = $1 AND id_oggetto = $2",
+        [idUser, id_oggetto],
+      );
+      if (check.rows.length === 0) {
+        return res.status(403).json({ error: "Non possiedi questo oggetto" });
+      }
+    }
+
+    // Aggiorniamo il profilo utente
+    await db.query(`UPDATE utenti SET ${colonna} = $1 WHERE id_utente = $2`, [
+      valoreSql,
+      idUser,
+    ]);
+    res.json({ success: true, message: "Equipaggiato salvato nel DB!" });
+  } catch (err) {
+    console.error("Errore equipaggiamento DB:", err);
+    res.status(500).json({ error: "Errore salvataggio equipaggiamento" });
   }
 });
 

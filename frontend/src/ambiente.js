@@ -79,16 +79,18 @@ export const notifica = reactive({
   },
 })
 
-// Popup per gli obiettivi
+// Popup per gli obiettivi e amicizie
 export const toast = reactive({
   titolo: '',
   descrizione: '',
+  tipo: 'obiettivo',
   visibile: false,
   timeout: null,
 
-  mostra(tit, desc) {
+  mostra(tit, desc, tipo = 'obiettivo') {
     this.titolo = tit
     this.descrizione = desc
+    this.tipo = tipo
     this.visibile = true
 
     // Se c'era già un toast, resettiamo il timer

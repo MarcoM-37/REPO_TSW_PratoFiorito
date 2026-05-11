@@ -175,6 +175,16 @@ const equipaggiaOggetto = (item) => {
   }
   inProva[item.tipo] = null
   notifica.mostra('Oggetto equipaggiato!')
+
+  // Invia il salvataggio al Database in background
+  const token = localStorage.getItem('token_campo_minato')
+  if (token) {
+    fetch(`${API_URL}/api/shop/equipaggia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id_oggetto: item.id_oggetto, tipo: item.tipo }),
+    }).catch((err) => console.error('Errore salvataggio DB:', err))
+  }
 }
 
 const effettuaAcquisto = async (item) => {
@@ -346,7 +356,10 @@ onMounted(avvioShop)
   width: 100%;
 }
 
-#div_temi, #div_sfondi, #div_icone, #div_musiche{
+#div_temi,
+#div_sfondi,
+#div_icone,
+#div_musiche {
   margin: 10px 10px;
   padding: 10px 10px 0 10px;
   border-radius: 5px;

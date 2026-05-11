@@ -201,7 +201,14 @@ onMounted(() => {
 const apriChat = () => {
   chatAperta.value = !chatAperta.value
   notificheChat.value = 0
-  if (chatAperta.value) socket.emit('sblocca_singolo', 'open_chat')
+
+  const btnFeed = document.getElementById('btn-feed')
+  if (chatAperta.value) {
+    socket.emit('sblocca_singolo', 'open_chat')
+    if (btnFeed) btnFeed.style.display = 'none' // Nascondi
+  } else {
+    if (btnFeed) btnFeed.style.display = 'block' // Mostra
+  }
 }
 
 // Funzione legata al bottone del popup
@@ -220,6 +227,9 @@ onUnmounted(() => {
     })
   }
 
+  const btnFeed = document.getElementById('btn-feed')
+  if (btnFeed) btnFeed.style.display = 'block'
+
   // Rimuovere i "listener" quando l'utente cambia pagina.
   // Altrimenti, tornando su questa pagina, avremmo eventi duplicati in ascolto.
   socket.off('aggiorna_griglia')
@@ -230,7 +240,40 @@ onUnmounted(() => {
   socket.off('sync_hud')
 })
 
-//Funzioni di interazione con l'utente
+const mostraInviti = ref(false)
+const listaAmici = ref([])
+const API_URL = import.meta.env.VITE_SOCKET_URL
+
+const copiaCodice = () => {
+  navigator.clipboard.writeText(idStanza)
+  notifica.mostra('Codice Stanza copiato negli appunti!')
+}
+
+const ApriInviti = async () => {
+  mostraInviti.value = true
+  try {
+    const token = localStorage.getItem('token_campo_minato')
+    const res = await fetch(`${API_URL}/api/amici`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const dati = await res.json()
+      listaAmici.value = dati.amici // Recuperiamo solo la lista degli amici accettati
+    }
+  } catch (err) {
+    console.error('Errore caricamento amici:', err)
+  }
+}
+
+const InvitaAmico = (idAmico) => {
+  socket.emit('invia_invito_partita', {
+    idDestinatario: idAmico,
+    idPartita: idStanza,
+    username: sessione.utente.username,
+  })
+  notifica.mostra('Invito inviato con successo!')
+  mostraInviti.value = false
+}
 
 // Invocata al click su una cella
 const scopriCella = (x, y) => {
@@ -290,7 +333,16 @@ const mettiBandierina = (x, y) => {
     ></Loading>
 
     <div v-else id="zonaPartita" class="finestra">
-      <!-- HUD delle statistiche in tempo reale -->
+      <div class="header-partita">
+        <div class="info-stanza">
+          <span
+            >Stanza: <strong>{{ idStanza }}</strong></span
+          >
+          <button class="btn-copia" @click="copiaCodice">📋</button>
+        </div>
+        <button class="btn-invita" @click="ApriInviti">➕ Invita Amici</button>
+      </div>
+
       <div id="hud-statistiche">
         <div class="stat-box">
           <span class="icona">⏱️</span><span class="valore">{{ tempoFormattato }}</span>
@@ -377,10 +429,9 @@ const mettiBandierina = (x, y) => {
       </div>
     </div>
   </div>
-  <!-- OVERLAY DEL MODAL -->
+
   <div v-if="modalVisibile" class="modal-overlay">
     <div class="modal-content">
-      <!-- Intestazione dinamica -->
       <h2 v-if="datiFinePartita.esito === 'vittoria' || datiFinePartita.esito === 'vinta'">
         🎉 VITTORIA!
       </h2>
@@ -405,6 +456,21 @@ const mettiBandierina = (x, y) => {
 
       <!-- Bottone di uscita -->
       <button @click="chiudiE_TornaHome" class="btn-home">Torna alla Lobby</button>
+    </div>
+  </div>
+  <div v-if="mostraInviti" class="modal-overlay" @click.self="mostraInviti = false">
+    <div class="modal-content inviti-modal">
+      <h2 style="margin-bottom: 20px">Invita un Amico</h2>
+      <div class="lista-amici-invito">
+        <div v-for="amico in listaAmici" :key="amico.id_utente" class="amico-row">
+          <span>{{ amico.icona }} {{ amico.username }}</span>
+          <button class="btn-invia-invito" @click="InvitaAmico(amico.id_utente)">Invita</button>
+        </div>
+        <div v-if="listaAmici.length === 0" style="color: #aaa">
+          Nessun amico trovato. Aggiungili dal tuo Profilo!
+        </div>
+      </div>
+      <button class="btn-home" @click="mostraInviti = false">Chiudi</button>
     </div>
   </div>
 </template>
@@ -679,5 +745,77 @@ const mettiBandierina = (x, y) => {
 .icona-chat {
   margin: 0 4px;
   font-size: 1.1em;
+}
+
+/* Stili Header Partita e Inviti */
+.header-partita {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.info-stanza {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+}
+
+.btn-copia {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: transform 0.1s;
+}
+.btn-copia:hover {
+  transform: scale(1.1);
+}
+
+.btn-invita {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-invita:hover {
+  background-color: #0056b3;
+}
+
+.inviti-modal {
+  max-width: 400px;
+}
+.lista-amici-invito {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+.amico-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-invia-invito {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
 }
 </style>

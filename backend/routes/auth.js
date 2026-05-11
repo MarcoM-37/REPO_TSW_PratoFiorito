@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs"); //per maggiore sicurezza
 const jwt = require("jsonwebtoken"); //invece dei cookie
 const db = require("../db/index"); //ponte al db
-const { registraAnnuncio } = require('../services/feed');
+const { creaAnnuncioGlobale } = require("../services/feed");
 
 //REGISTRAZIONE
 router.post("/signup", async (req, res) => {
@@ -16,12 +16,10 @@ router.post("/signup", async (req, res) => {
       .json({ success: false, error: "Tutti i campi sono obbligatori" });
   }
   if (password.lenght < 8) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        error: "La password deve contenere almeno 8 caratteri",
-      });
+    return res.status(400).json({
+      success: false,
+      error: "La password deve contenere almeno 8 caratteri",
+    });
   }
 
   try {
@@ -45,21 +43,28 @@ router.post("/signup", async (req, res) => {
       expiresIn: "24h",
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Registrazione riuscita",
-        token,
-        user: newUser,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Registrazione riuscita",
+      token,
+      user: {
+        id: newUser.id_utente,
+        username: newUser.username,
+        email: newUser.email,
+        valuta: 0,
+        tema: "#42b9af",
+        sfondo: "/pattern/sfondo_base.jpg",
+        icona: "🎭",
+      },
+    });
 
-    /*const io = req.app.get('socketio'); 
-    registraAnnuncio(io, {
-        tipo: 'nuovo_utente',
-        messaggio: `Diamo il benvenuto a ${username}! ✨`
-    });*/ //Per il feed di benvenuto
-    
+    // Avvisiamo tutto il server del nuovo iscritto
+    const io = req.app.get("socketio");
+    await creaAnnuncioGlobale(
+      io,
+      "nuovo_utente",
+      `Diamo il benvenuto a ${username}! ✨`,
+    );
   } catch (err) {
     if (err.code === "23505") {
       //Errore Chiave Duplicata di Postgres
@@ -79,10 +84,19 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    //Cerchiamo l'utente
-    const result = await db.query("SELECT * FROM utenti WHERE email = $1", [
-      email,
-    ]);
+    //Cerchiamo l'utente e facciamo JOIN con il negozio per i link degli oggetti
+    const query = `
+        SELECT u.*, 
+               t.asset_url as tema_url, 
+               s.asset_url as sfondo_url, 
+               i.asset_url as icona_url
+        FROM utenti u
+        LEFT JOIN negozio t ON u.skin_attiva = t.id_oggetto
+        LEFT JOIN negozio s ON u.sfondo_attivo = s.id_oggetto
+        LEFT JOIN negozio i ON u.icona_attiva = i.id_oggetto
+        WHERE u.email = $1
+    `;
+    const result = await db.query(query, [email]);
     const user = result.rows[0];
 
     if (!user)
@@ -110,6 +124,9 @@ router.post("/login", async (req, res) => {
         username: user.username,
         email: user.email,
         valuta: user.valuta,
+        tema: user.tema_url || "#42b9af",
+        sfondo: user.sfondo_url || "/pattern/sfondo_base.jpg",
+        icona: user.icona_url || "🎭",
       },
     });
   } catch (err) {

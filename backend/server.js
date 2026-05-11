@@ -6,7 +6,11 @@ const path = require("path");
 const bcrypt = require("bcrypt"); // Libreria per la sicurezza delle password
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const { registraAnnuncio } = require('./services/feed'); //Per il feed
+const {
+  creaAnnuncioGlobale,
+  creaAnnuncioPersonale,
+  creaAnnuncioDiGruppo,
+} = require("./services/feed");
 
 // Importiamo il motore di gioco
 const gameLogic = require("./game_logic");
@@ -34,7 +38,7 @@ const io = new Server(server, {
   cors: corsOptions,
 });
 
-app.set('socketio', io); //Per il feed in auth
+app.set("socketio", io); //Per il feed in auth
 
 //Serve un "middleware" per le socket
 io.use((socket, next) => {
@@ -61,6 +65,9 @@ app.use("/api/auth", authRoutes);
 
 const statsRoutes = require("./routes/stats");
 app.use("/api/stats", statsRoutes);
+
+const amiciRoutes = require("./routes/amici");
+app.use("/api/amici", amiciRoutes);
 
 // Rotte per lo shop
 const shopRoutes = require("./routes/shop");
@@ -104,6 +111,27 @@ const salvaProgressiGiocatore = async (idPartita, idUtente) => {
       console.error("Errore salvataggio progressi:", err);
     }
   }
+};
+
+// Funzione per inviare l'annuncio finale ai partecipanti
+const inviaAnnuncioFinePartita = async (io, idPartita, partita, esito) => {
+  const iconaEsito = esito === "vinta" || esito === "vittoria" ? "🏆" : "💥";
+  const testoBase =
+    esito === "vinta" || esito === "vittoria"
+      ? `Vittoria! Hai completato il campo ${partita.size}x${partita.size}!`
+      : `Partita terminata: il campo ${partita.size}x${partita.size} è esploso.`;
+
+  const messaggioFormattato = `${idPartita}|${iconaEsito} ${testoBase}`;
+
+  // Estraiamo tutti gli ID degli utenti che hanno giocato
+  const partecipanti = Object.keys(partita.giocatori);
+
+  await creaAnnuncioDiGruppo(
+    io,
+    partecipanti,
+    "fine_partita",
+    messaggioFormattato,
+  );
 };
 
 // Quando un nuovo client si connette al server
@@ -237,14 +265,18 @@ io.on("connection", (socket) => {
   // Trigger globale al login: Scansiona tutto il profilo per assegnare obiettivi retroattivi
   aggiornaProgressione(socket.user.id);
 
-  //Un ascoltatore per inciare lo storico degli annunci
-  socket.on('richiedi_annunci', async () => {
-       try {
-        const res = await db.query("SELECT * FROM global_feed ORDER BY creato_il DESC LIMIT 30");
-        socket.emit('storico_annunci', res.rows);
-       } catch (err) {
-           console.error("Errore recupero annunci: ", err);
-       }
+  // Un ascoltatore per inviare lo storico degli annunci
+  socket.on("richiedi_annunci", async () => {
+    try {
+      // Peschiamo gli annunci globali (id_utente IS NULL) e quelli indirizzati specificamente a me
+      const res = await db.query(
+        "SELECT * FROM global_feed WHERE id_utente IS NULL OR id_utente = $1 ORDER BY creato_il DESC LIMIT 30",
+        [socket.user.id],
+      );
+      socket.emit("storico_annunci", res.rows);
+    } catch (err) {
+      console.error("Errore recupero annunci: ", err);
+    }
   });
 
   // 1. L'utente chiede di entrare/creare una partita
@@ -591,7 +623,7 @@ io.on("connection", (socket) => {
           console.error("Errore fine partita Sconfitta:", err);
         }
 
-        // Salva le bandierine finali E il tempo per tutti i giocatori
+        // Salva le bandierine finali e il tempo per tutti i giocatori
         for (const [idGioc, datiGioc] of Object.entries(partita.giocatori)) {
           let tempoPassato = 0;
           if (datiGioc.timestampIngresso) {
@@ -610,6 +642,7 @@ io.on("connection", (socket) => {
           }
         }
 
+        await inviaAnnuncioFinePartita(io, idPartita, partita, "persa");
         delete activeGames[idPartita];
         return;
       } else {
@@ -710,13 +743,6 @@ io.on("connection", (socket) => {
           [partita.uuid],
         );
 
-        
-        registraAnnuncio(io, {
-        tipo: 'vittoria',
-        messaggio: `${socket.datiUtente.username} ha appena completato con successo un campo ${partita.larghezza}x${partita.altezza}! 🏆`,
-        idUtente: dati.idUtente
-        }); //Per il feed della vittoria
-
         // Inviamo l'evento con i dati completi
         io.to(idPartita).emit("partita_terminata", {
           esito: "vittoria",
@@ -747,6 +773,7 @@ io.on("connection", (socket) => {
         }
       }
 
+      await inviaAnnuncioFinePartita(io, idPartita, partita, "vinta");
       delete activeGames[idPartita]; // Puliamo la RAM
       return;
     }
@@ -805,6 +832,14 @@ io.on("connection", (socket) => {
       // 2. Lo spediamo a tutti i presenti nella stanza (compreso chi lo ha inviato)
       io.to(idPartita).emit("nuovo_messaggio_chat", nuovoMessaggio);
     }
+  });
+
+  // Gestione Inviti Partita
+  socket.on("invia_invito_partita", async (dati) => {
+    const { idDestinatario, idPartita, username } = dati;
+    const msg = `${idPartita}|${username} ti ha invitato a unirti alla sua partita!`;
+
+    await creaAnnuncioPersonale(io, idDestinatario, "invito_partita", msg);
   });
 
   socket.on("lascia_partita", async (dati) => {

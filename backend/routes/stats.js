@@ -72,12 +72,9 @@ router.get("/me", auth, async (req, res) => {
 
     const query = `
            SELECT username, email, valuta,
-           (
-               SELECT COUNT(*) 
-               FROM gioca_in g 
-               JOIN partite p ON g.id_partita = p.id_partita 
-               WHERE g.id_utente = $1 AND p.stato = 'vinta'
-           ) as vittorie_totali
+           (SELECT COUNT(*) FROM gioca_in WHERE id_utente = $1) as partite_giocate,
+           (SELECT COUNT(*) FROM gioca_in g JOIN partite p ON g.id_partita = p.id_partita WHERE g.id_utente = $1 AND p.stato = 'vinta') as vittorie_totali,
+           (SELECT COALESCE(SUM(punteggio_partita), 0) FROM gioca_in WHERE id_utente = $1) as punti_totali
            FROM utenti
            WHERE id_utente = $1
         `;
@@ -147,6 +144,42 @@ router.get("/obiettivi", auth, async (req, res) => {
       success: false,
       error: "Errore nel caricamento degli obiettivi",
     });
+  }
+});
+
+// Rotta per visionare il profilo di un amico
+router.get("/utente/:id", auth, async (req, res) => {
+  try {
+    const idTarget = req.params.id;
+
+    // Dati Base e Statistiche
+    const query = `
+            SELECT u.username, u.valuta, COALESCE(n.asset_url, '🎭') as icona,
+            (SELECT COUNT(*) FROM gioca_in WHERE id_utente = $1) as partite_giocate,
+            (SELECT COUNT(*) FROM gioca_in g JOIN partite p ON g.id_partita = p.id_partita WHERE g.id_utente = $1 AND p.stato = 'vinta') as vittorie_totali,
+            (SELECT COALESCE(SUM(punteggio_partita), 0) FROM gioca_in WHERE id_utente = $1) as punti_totali
+            FROM utenti u
+            LEFT JOIN negozio n ON u.icona_attiva = n.id_oggetto
+            WHERE u.id_utente = $1
+        `;
+    const result = await db.query(query, [idTarget]);
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "Utente non trovato" });
+
+    // Obiettivi sbloccati dall'amico
+    const queryObiettivi = `
+            SELECT t.titolo, t.descrizione, r.data_sblocco
+            FROM traguardi t
+            JOIN raggiunto_da r ON t.id_traguardo = r.id_traguardo
+            WHERE r.id_utente = $1
+            ORDER BY r.data_sblocco DESC
+        `;
+    const obRes = await db.query(queryObiettivi, [idTarget]);
+
+    res.json({ success: true, user: result.rows[0], obiettivi: obRes.rows });
+  } catch (err) {
+    res.status(500).json({ error: "Errore caricamento profilo" });
   }
 });
 

@@ -52,6 +52,17 @@ const attivaOggetto = (item) => {
   else if (item.tipo == 'sfondo') skin.cambiaSfondo(`url('${item.asset_url}')`)
   else if (item.tipo == 'icona') skin.cambiaIcona(item.asset_url)
   notifica.mostra(`Hai equipaggiato: ${item.nome}`)
+
+  // Invia il salvataggio al Database in background
+  const token = localStorage.getItem('token_campo_minato')
+  if (token) {
+    fetch(`${API_URL}/api/shop/equipaggia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      // I preset base non hanno un ID numerico (es. 'tema_base'), la nostra rotta sa come gestirli
+      body: JSON.stringify({ id_oggetto: item.id_oggetto || item.id, tipo: item.tipo }),
+    }).catch((err) => console.error('Errore salvataggio DB:', err))
+  }
 }
 
 onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquistati (NOTA: al momento carica la lista di tutti gli item)
@@ -59,79 +70,65 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
 
 <template>
   <div id="main">
-
     <Loading v-if="caricamento" messaggio="Caricamento inventario..."></Loading>
 
-    <Errore v-else-if="errore" :messaggio="errore"  @riprova="caricaClassifica"></Errore>
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
-      
       <div id="div_temi">
         <h2>Temi:</h2>
         <div class="riga_oggetti">
-
           <SlotInventarioTema
             :item="{
-              'id' : 'tema_base',
-              'nome' : 'Verde Persiano (BASE)',
-              'asset_url' : '#42b9af',
-              'tipo' : 'tema'
+              id: 'tema_base',
+              nome: 'Verde Persiano (BASE)',
+              asset_url: '#42b9af',
+              tipo: 'tema',
             }"
-            @attiva="attivaOggetto">
-          </SlotInventarioTema>
-          
-          <SlotInventarioTema
-            v-for="item in temi"
-            :item="item"
-            @attiva="attivaOggetto">
+            @attiva="attivaOggetto"
+          >
           </SlotInventarioTema>
 
+          <SlotInventarioTema v-for="item in temi" :item="item" @attiva="attivaOggetto">
+          </SlotInventarioTema>
         </div>
       </div>
 
       <div id="div_sfondi">
         <h2>Sfondi:</h2>
         <div class="riga_oggetti">
-
           <SlotInventarioSfondo
             :item="{
-              'id' : 'sfondo_base',
-              'nome' : 'Mattoncini Grigi (BASE)',
-              'asset_url' : '/pattern/sfondo_base.jpg',
-              'tipo' : 'sfondo'
+              id: 'sfondo_base',
+              nome: 'Mattoncini Grigi (BASE)',
+              asset_url: '/pattern/sfondo_base.jpg',
+              tipo: 'sfondo',
             }"
-            @attiva="attivaOggetto">
+            @attiva="attivaOggetto"
+          >
           </SlotInventarioSfondo>
 
-          <SlotInventarioSfondo
-            v-for="item in sfondi"
-            :item="item"
-            @attiva="attivaOggetto">
+          <SlotInventarioSfondo v-for="item in sfondi" :item="item" @attiva="attivaOggetto">
           </SlotInventarioSfondo>
-          
         </div>
       </div>
 
       <div id="div_icone">
         <h2>Icone Profilo:</h2>
         <div class="riga_oggetti">
-
           <SlotInventarioIcona
             :item="{
-              'id' : 'icona_base',
-              'nome' : 'Maschere (BASE)',
-              'asset_url' : '🎭',
-              'tipo' : 'icona'
+              id: 'icona_base',
+              nome: 'Maschere (BASE)',
+              asset_url: '🎭',
+              tipo: 'icona',
             }"
-            @attiva="attivaOggetto">
-          </SlotInventarioIcona>
-          
-          <SlotInventarioIcona
-            v-for="item in icone"
-            :item="item"
-            @attiva="attivaOggetto">
+            @attiva="attivaOggetto"
+          >
           </SlotInventarioIcona>
 
+          <SlotInventarioIcona v-for="item in icone" :item="item" @attiva="attivaOggetto">
+          </SlotInventarioIcona>
         </div>
       </div>
     </div>
@@ -145,7 +142,9 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
   height: 80%;
 }
 
-#div_temi, #div_sfondi, #div_icone {
+#div_temi,
+#div_sfondi,
+#div_icone {
   margin: 10px 10px;
   padding: 10px 10px 0 10px;
   border-radius: 5px;

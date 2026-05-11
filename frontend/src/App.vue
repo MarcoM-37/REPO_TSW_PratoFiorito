@@ -3,44 +3,74 @@ import Header from '@/components/Header.vue'
 import { skin, notifica, toast, sessione, sfx } from '@/ambiente.js'
 import { socket } from '@/socket.js'
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 //Per il feed
-const feedAperto = ref(false);
-const annunci = ref([]);
-const notificheFeed = ref(0);
+const feedAperto = ref(false)
+const annunci = ref([])
+const notificheFeed = ref(0)
 
 const apriFeed = () => {
-     feedAperto.value = !feedAperto.value;
-     notificheFeed.value = 0; // Azzera le notifiche quando apri
-};
+  feedAperto.value = !feedAperto.value
+  notificheFeed.value = 0 // Azzera le notifiche quando apri
+}
+
+const AccettaInvito = (idStanza) => {
+  feedAperto.value = false // Chiudiamo la tendina
+  router.push({ path: '/partita/' + idStanza, query: { azione: 'unisciti' } })
+}
 
 onMounted(() => {
-  // 1. Se c'è un utente loggato, accendiamo il Socket in tutto il sito
+  // Se c'è un utente loggato, accendiamo il Socket in tutto il sito
   if (sessione.utente) {
     socket.auth = { token: localStorage.getItem('token_campo_minato') }
     socket.connect()
-    socket.emit('richiedi_annunci'); //Chiede gli annunci passati
+    socket.emit('richiedi_annunci') //Chiede gli annunci passati
   }
 
   //Ricezione dello storico al login
   socket.on('storico_annunci', (dati) => {
-       annunci.value = dati;
-  });
+    annunci.value = dati
+  })
 
   //Ricezione di un annuncio in diretta
   socket.on('nuovo_annuncio_global', (annuncio) => {
-       annunci.value.unshift(annuncio);
-       if (!feedAperto.value) notificheFeed.value++;
-       if (annunci.value.length > 30) annunci.value.pop(); //Limitiamoli a 30
-  });
+    annunci.value.unshift(annuncio)
+    if (!feedAperto.value) notificheFeed.value++
+    if (annunci.value.length > 30) annunci.value.pop()
 
-  // 2. Restiamo in ascolto se il server ci sblocca un obiettivo
+    // Gestione specifica per fine partita
+    if (annuncio.tipo_evento === 'fine_partita') {
+      sfx.play('richiesta.wav')
+      const testo = annuncio.messaggio.split('|')[1]
+      toast.mostra('Risultati Disponibili! 📊', testo, 'fine_partita')
+    }
+    // Gestione inviti
+    else if (annuncio.tipo_evento === 'invito_partita') {
+      sfx.play('richiesta.wav')
+      const testo = annuncio.messaggio.split('|')[1]
+      toast.mostra('Invito a giocare! 🎮', testo, 'invito')
+    }
+  })
+
+  // Restiamo in ascolto se il server ci sblocca un obiettivo
   socket.on('obiettivo_sbloccato', (dati) => {
-    // 1. Facciamo partire il suono
+    // Facciamo partire il suono
     sfx.play('obiettivo.wav')
 
-    // 2. Mostriamo il popup a schermo
+    // Mostriamo il popup a schermo
     toast.mostra(dati.titolo, dati.descrizione)
+  })
+
+  // Notifica in tempo reale per le richieste di amicizia
+  socket.on('nuova_richiesta_amicizia', (dati) => {
+    sfx.play('richiesta.wav')
+    toast.mostra(
+      'Nuova Richiesta! 🤝',
+      `${dati.mittente} vuole essere tuo amico! Vai al profilo per accettare.`,
+      'amicizia',
+    )
   })
 
   document.addEventListener('click', (evento) => {
@@ -52,13 +82,16 @@ onMounted(() => {
 })
 
 //Se l'utente fa login senza ricaricare la pagina, ricarichiamo il feed
-watch(() => sessione.utente, (nuovoUtente) => {
-  if (nuovoUtente) {
-    socket.emit('richiedi_annunci');
-  } else {
-    annunci.value = [];
-  }
-});
+watch(
+  () => sessione.utente,
+  (nuovoUtente) => {
+    if (nuovoUtente) {
+      socket.emit('richiedi_annunci')
+    } else {
+      annunci.value = []
+    }
+  },
+)
 </script>
 
 <template>
@@ -75,9 +108,12 @@ watch(() => sessione.utente, (nuovoUtente) => {
       </div>
     </div>
 
-    <div v-if="toast.visibile" class="toast-container">
+    <div v-if="toast.visibile" class="toast-container" :class="'toast-' + toast.tipo">
       <div class="toast-content">
-        <div class="toast-icona">🏆</div>
+        <div class="toast-icona">
+          {{ toast.tipo === 'amicizia' ? '👤' : toast.tipo === 'invito' ? '🚀' : '🏆' }}
+        </div>
+
         <div class="toast-testo">
           <h4>{{ toast.titolo }}</h4>
           <p>{{ toast.descrizione }}</p>
@@ -99,10 +135,43 @@ watch(() => sessione.utente, (nuovoUtente) => {
         </div>
 
         <div class="area-annunci">
-          <div v-for="annuncio in annunci" :key="annuncio.id_evento" class="annuncio-card" :class="annuncio.tipo_evento">
-            <small class="ora">{{ new Date(annuncio.creato_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</small>
-            <span class="tipo-badge">{{ annuncio.tipo_evento.replace('_', ' ').toUpperCase() }}</span>
-            <p>{{ annuncio.messaggio }}</p>
+          <div
+            v-for="annuncio in annunci"
+            :key="annuncio.id_evento"
+            class="annuncio-card"
+            :class="annuncio.tipo_evento"
+          >
+            <small class="ora">{{
+              new Date(annuncio.creato_il).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            }}</small>
+            <span class="tipo-badge">{{
+              annuncio.tipo_evento.replace('_', ' ').toUpperCase()
+            }}</span>
+            <template v-if="annuncio.tipo_evento === 'fine_partita'">
+              <p>{{ annuncio.messaggio.split('|')[1] }}</p>
+              <button
+                class="btn-visualizza-risultati"
+                @click="AccettaInvito(annuncio.messaggio.split('|')[0])"
+              >
+                Visualizza Risultati 📈
+              </button>
+            </template>
+
+            <template v-else-if="annuncio.tipo_evento === 'invito_partita'">
+              <p>{{ annuncio.messaggio.split('|')[1] }}</p>
+              <button
+                class="btn-entra-invito"
+                @click="AccettaInvito(annuncio.messaggio.split('|')[0])"
+              >
+                Entra nella Partita 🚀
+              </button>
+            </template>
+            <template v-else>
+              <p>{{ annuncio.messaggio }}</p>
+            </template>
           </div>
           <div v-if="annunci.length === 0" class="vuoto">Nessun annuncio recente.</div>
         </div>
@@ -177,7 +246,7 @@ watch(() => sessione.utente, (nuovoUtente) => {
 
 .toast-container {
   position: fixed;
-  top: 80px; /* Sotto l'header */
+  top: 80px;
   right: 20px;
   z-index: 10000;
   animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -186,7 +255,6 @@ watch(() => sessione.utente, (nuovoUtente) => {
 .toast-content {
   background: linear-gradient(135deg, #2c3e50, #1a252f);
   color: white;
-  border-left: 5px solid #f1c40f;
   padding: 15px 20px;
   border-radius: 8px;
   display: flex;
@@ -204,7 +272,6 @@ watch(() => sessione.utente, (nuovoUtente) => {
 .toast-testo h4 {
   margin: 0 0 5px 0;
   font-size: 1.1rem;
-  color: #f1c40f;
 }
 
 .toast-testo p {
@@ -227,6 +294,49 @@ watch(() => sessione.utente, (nuovoUtente) => {
   color: white;
 }
 
+.toast-obiettivo .toast-content {
+  border-left: 5px solid #f1c40f;
+}
+.toast-obiettivo .toast-testo h4 {
+  color: #f1c40f;
+}
+
+.toast-amicizia .toast-content {
+  border-left: 5px solid #3498db;
+}
+.toast-amicizia .toast-testo h4 {
+  color: #3498db;
+}
+
+.toast-invito .toast-content {
+  border-left: 5px solid #2ecc71;
+}
+.toast-invito .toast-testo h4 {
+  color: #2ecc71;
+}
+
+.toast-fine_partita .toast-content {
+  border-left: 5px solid #9b59b6;
+}
+.toast-fine_partita .toast-testo h4 {
+  color: #9b59b6;
+}
+
+.btn-visualizza-risultati {
+  background-color: #9b59b6;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin-top: 10px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: bold;
+}
+.btn-visualizza-results:hover {
+  filter: brightness(1.1);
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -238,7 +348,6 @@ watch(() => sessione.utente, (nuovoUtente) => {
   }
 }
 
-/* --- STILI FEED GLOBALE --- */
 #btn-feed {
   position: fixed;
   bottom: 20px;
@@ -252,7 +361,7 @@ watch(() => sessione.utente, (nuovoUtente) => {
   border: none;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .badge-notifica {
@@ -280,7 +389,9 @@ watch(() => sessione.utente, (nuovoUtente) => {
   z-index: 1001;
 }
 
-#sidebar-feed.aperta { right: 0; }
+#sidebar-feed.aperta {
+  right: 0;
+}
 
 .header-feed {
   display: flex;
@@ -312,7 +423,7 @@ watch(() => sessione.utente, (nuovoUtente) => {
   background: white;
   padding: 10px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   border-left: 4px solid #333;
 }
 
@@ -334,10 +445,32 @@ watch(() => sessione.utente, (nuovoUtente) => {
   border-radius: 4px;
 }
 
-/* Colori in base all'evento */
-.annuncio-card.vittoria { border-left-color: #28a745; }
-.annuncio-card.vittoria .tipo-badge { background: #28a745; }
+.annuncio-card.vittoria {
+  border-left-color: #28a745;
+}
+.annuncio-card.vittoria .tipo-badge {
+  background: #28a745;
+}
 
-.annuncio-card.nuovo_utente { border-left-color: #6f42c1; }
-.annuncio-card.nuovo_utente .tipo-badge { background: #6f42c1; }
+.annuncio-card.nuovo_utente {
+  border-left-color: #6f42c1;
+}
+.annuncio-card.nuovo_utente .tipo-badge {
+  background: #6f42c1;
+}
+
+.btn-entra-invito {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin-top: 10px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: bold;
+}
+.btn-entra-invito:hover {
+  filter: brightness(1.1);
+}
 </style>

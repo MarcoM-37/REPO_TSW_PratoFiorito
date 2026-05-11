@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { sessione, notifica } from '../../ambiente.js'
+import { sessione, notifica, skin } from '../../ambiente.js'
 import { socket } from '../../socket.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
@@ -28,7 +28,7 @@ const refreshLogin = () => {
 }
 
 const gestisciLogin = async () => {
-  caricamento.value = true 
+  caricamento.value = true
   try {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
@@ -45,6 +45,14 @@ const gestisciLogin = async () => {
     if (response.ok) {
       sessione.setUtente(dati.user)
       localStorage.setItem('token_campo_minato', dati.token)
+
+      // Applichiamo la skin ricevuta dal db
+      skin.cambiaTema(dati.user.tema)
+      skin.cambiaSfondo(
+        dati.user.sfondo.startsWith('url') ? dati.user.sfondo : `url('${dati.user.sfondo}')`,
+      )
+      skin.cambiaIcona(dati.user.icona)
+
       socket.auth = { token: dati.token }
       socket.connect()
       router.push('/')
@@ -65,7 +73,6 @@ const gestisciLogin = async () => {
 
 <template>
   <div id="main">
-
     <Loading v-if="caricamento" messaggio="Login in corso..."></Loading>
 
     <Errore v-else-if="errore" :messaggio="errore" @riprova="refreshLogin"></Errore>
