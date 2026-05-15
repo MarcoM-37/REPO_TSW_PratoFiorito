@@ -1,7 +1,9 @@
 <script setup>
-import { onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { skin, sessione, playerMusicale } from '../ambiente'
 import { useRouter } from 'vue-router'
+
+const menuMusica = ref(false)
 
 const router = useRouter()
 const API_URL = import.meta.env.VITE_SOCKET_URL
@@ -82,6 +84,45 @@ const formattaTempo = (secondi) => {
       <img  src="/logo.png" alt="MinesweeperMMO Logo" @click="TornaHome" style="cursor: pointer" height="80px" />
     </picture>
 
+    <button v-if="sessione.utente" id="btn_musica" @click="menuMusica = !menuMusica">
+      {{ menuMusica ? '❌' : '🎵' }}
+    </button>
+    <Teleport to="body">
+      <div v-if="menuMusica" id="outer_menuMusica">
+        <div id="inner_menuMusica" :style="{ '--bg-color': skin.temaPrincipale }">
+          <template v-if="playerMusicale.libreria.length > 0">
+            <select @change="gestisciCambioTraccia" class="select-traccia">
+              <option value="" disabled :selected="!playerMusicale.tracciaAttuale">
+                Seleziona un brano...
+              </option>
+              <option v-for="t in playerMusicale.libreria" :key="t.id_oggetto" :value="t.asset_url">
+                🎵 {{ t.nome }}
+              </option>
+            </select>
+
+            <div class="controlli-player" v-if="playerMusicale.tracciaAttuale">
+              <button class="btn-play" @click="playerMusicale.toggle()">
+                {{ playerMusicale.inRiproduzione ? '⏸️' : '▶️' }}
+              </button>
+              <span class="tempo">{{ formattaTempo(playerMusicale.progresso) }}</span>
+              <input
+                type="range"
+                :max="playerMusicale.durata"
+                :value="playerMusicale.progresso"
+                @input="scorrimentoSlider"
+                class="slider-musica"
+              />
+              <span class="tempo">{{ formattaTempo(playerMusicale.durata) }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <span class="testo-no-musica">Nessun brano in libreria</span>
+            <button @click="VaiShop" class="btn-shop-musica">🛒 Visita lo Shop</button>
+          </template>
+        </div>
+      </div>
+    </Teleport>
+
     <div id="div_player" v-if="sessione.utente">
       <template v-if="playerMusicale.libreria.length > 0">
         <select @change="gestisciCambioTraccia" class="select-traccia">
@@ -116,14 +157,17 @@ const formattaTempo = (secondi) => {
     </div>
 
     <div v-if="sessione.utente" class="sezione-utente">
-      <label style="font-size: 30px; margin-right: 10px">{{ skin.icona }}</label>
-      <span class="nome-profilo" @click="VaiProfilo">{{ sessione.utente.username }}</span>
+      <div id="div_nome_icona">
+        <label style="font-size: 30px; margin-right: 10px">{{ skin.icona }}</label>
+        <span class="nome-profilo" @click="VaiProfilo">{{ sessione.utente.username }}</span>
+      </div>
       <button @click="EseguiLogout" class="btn-header">LOG OUT</button>
     </div>
 
     <div v-else>
       <button @click="VaiLogin" class="btn-header">ACCEDI / REGISTRATI</button>
     </div>
+  
   </div>
 </template>
 
@@ -238,5 +282,66 @@ const formattaTempo = (secondi) => {
 
 .btn-shop-musica:hover {
   transform: scale(1.05);
+}
+
+#btn_musica {
+    display: none;
+    width  : 60px;
+    height : 60px;
+    border-radius : 10px;
+    font-size: 1.5rem;
+  }
+
+#outer_menuMusica {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 700;
+}
+#inner_menuMusica {
+  background-color: var(--bg-color);
+  border: 2px solid color-mix(in srgb, var(--bg-color), white 10%);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 5px 5px 30px rgb(0, 0, 0);
+  width: 85%;
+  max-width: 320px;
+  z-index: 800;
+}
+#inner_menuMusica .select-traccia {
+  width: 100%;
+}
+
+
+@media only screen and (max-width : 800px){
+  #div_player {
+    display: none;
+  }
+  #btn_musica {
+    display: block;
+  }
+  .sezione-utente {
+    display: flex;
+    flex-direction: column;
+  }
+  .sezione-utente > * {
+    font-size : 12px
+  }
+  #div_nome_icona {
+    margin : 5px 0px 5px;
+  }
+  .btn-header {
+    padding : 6px 7px;
+    margin : 5px;
+  }
 }
 </style>
