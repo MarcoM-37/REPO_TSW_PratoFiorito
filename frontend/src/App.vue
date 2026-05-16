@@ -29,6 +29,17 @@ onMounted(() => {
     socket.emit('richiedi_annunci') //Chiede gli annunci passati
   }
 
+  // Ascoltiamo se il server ci rifiuta la connessione per token scaduti
+  socket.on('connect_error', (errore) => {
+    if (errore.message === 'Token non valido' || errore.message === 'Autenticazione richiesta') {
+      sessione.logout()
+      notifica.mostra("Sessione scaduta. Effettua nuovamente l'accesso per continuare.")
+      if (router.currentRoute.value.path !== '/') {
+        router.push('/') // Riportiamo l'utente alla home se si trovava in un'altra pagina
+      }
+    }
+  })
+
   //Ricezione dello storico al login
   socket.on('storico_annunci', (dati) => {
     annunci.value = dati

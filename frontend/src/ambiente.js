@@ -155,6 +155,9 @@ export const playerMusicale = reactive({
         const dati = await res.json()
         this.impostaLibreria(dati.inventario)
         console.log('Libreria musicale aggiornata!')
+      } else if (res.status === 401) {
+        // Se il server risponde 401 il token è scaduto
+        sessione.logout() // Pulisce istantaneamente il localStorage
       }
     } catch (err) {
       console.error('Errore refresh libreria musicale:', err)
