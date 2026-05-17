@@ -79,16 +79,22 @@ const formattaTempo = (secondi) => {
 <template>
   <div id="main-header">
 
-    <picture>
+    <!-- ------------------------------LOGO------------------------------------------------ -->
+
+    <picture id="logo">
       <source media="(max-width: 800px)" srcset="/logo_sml.png">
-      <img  src="/logo.png" alt="MinesweeperMMO Logo" @click="TornaHome" style="cursor: pointer" height="80px" />
+      <img  src="/logo.png" alt="MinesweeperMMO Logo" @click="TornaHome" height="80px" />
     </picture>
 
+
+
+    <!-- ------------------------------LETTORE MUSICALE------------------------------------- -->
+    <!-- -------------VERSIONE MOBILE----------------- -->
     <button v-if="sessione.utente" id="btn_musica" @click="menuMusica = !menuMusica">
       {{ menuMusica ? '❌' : '🎵' }}
     </button>
     <Teleport to="body">
-      <div v-if="menuMusica" id="outer_menuMusica">
+      <div v-if="menuMusica" id="outer_menuMusica" @click.self="menuMusica = !menuMusica">
         <div id="inner_menuMusica" :style="{ '--bg-color': skin.temaPrincipale }">
           <template v-if="playerMusicale.libreria.length > 0">
             <select @change="gestisciCambioTraccia" class="select-traccia">
@@ -123,6 +129,7 @@ const formattaTempo = (secondi) => {
       </div>
     </Teleport>
 
+     <!-- -------------VERSIONE STANDARD----------------- -->
     <div id="div_player" v-if="sessione.utente">
       <template v-if="playerMusicale.libreria.length > 0">
         <select @change="gestisciCambioTraccia" class="select-traccia">
@@ -156,10 +163,14 @@ const formattaTempo = (secondi) => {
       </template>
     </div>
 
+
+
+    <!-- ------------------------------PROFILO E ICONA------------------------------------- -->
+
     <div v-if="sessione.utente" class="sezione-utente">
-      <div id="div_nome_icona">
-        <label style="font-size: 30px; margin-right: 10px">{{ skin.icona }}</label>
-        <span class="nome-profilo" @click="VaiProfilo">{{ sessione.utente.username }}</span>
+      <div id="div_nome_icona" @click="VaiProfilo">
+        <label class="icona-profilo">{{ skin.icona }}</label>
+        <span class="nome-profilo" >{{ sessione.utente.username }}</span>
       </div>
       <button @click="EseguiLogout" class="btn-header">LOG OUT</button>
     </div>
@@ -185,17 +196,37 @@ const formattaTempo = (secondi) => {
   z-index: 900;
 }
 
+#logo {
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* per fare in modo che se cliccato da mobile non si illumina di blu */
+  background-color:  color-mix(in srgb, var(--bg-color), black 20%);
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
 .sezione-utente {
   display: flex;
   align-items: center;
 }
 
+#div_nome_icona {
+    margin : 5px 0px 5px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background-color: color-mix(in srgb, var(--bg-color), white 20%);
+    cursor: pointer;
+  }
+
 .nome-profilo {
   font-weight: bold;
   font-size: 1.2rem;
   color: #333;
-  cursor: pointer;
 }
+.icona-profilo {
+  font-size: 30px; 
+  margin-right: 10px;
+}
+
 
 .btn-header {
   padding: 0.8rem 1.2rem;
@@ -284,13 +315,19 @@ const formattaTempo = (secondi) => {
   transform: scale(1.05);
 }
 
+/* PER MUSICA MOBILE */
 #btn_musica {
-    display: none;
-    width  : 60px;
-    height : 60px;
-    border-radius : 10px;
-    font-size: 1.5rem;
-  }
+  display: none;
+  width  : 60px;
+  height : 60px;
+  border-radius : 10px;
+  font-size: 1.5rem;
+  border:none;
+  background-color: color-mix(in srgb, var(--bg-color),white 90%);
+}
+#btn_musica:hover {
+  background-color: color-mix(in srgb, var(--bg-color),white 75%);
+}
 
 #outer_menuMusica {
   position: fixed;
@@ -340,8 +377,14 @@ const formattaTempo = (secondi) => {
     margin : 5px 0px 5px;
   }
   .btn-header {
-    padding : 6px 7px;
+    padding : 6px 15px;
     margin : 5px;
+  }
+  .nome-profilo {
+    display: none;
+  }
+  .icona-profilo {
+    margin : 0;
   }
 }
 </style>

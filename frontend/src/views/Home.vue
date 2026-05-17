@@ -168,6 +168,9 @@ const storicoFiltrato = computed(() => {
 <template>
   <div id="main">
     <div id="menu" class="finestra">
+
+      <!-- -------------------------BOTTONI-------------------------- -->
+
       <button @click="ApriModaleCreazione">Crea Nuova Partita</button>
 
       <div class="join-box">
@@ -181,6 +184,10 @@ const storicoFiltrato = computed(() => {
       <button @click="VaiObiettivi">Obiettivi</button>
       <button @click="VaiClassifica">Classifica</button>
     </div>
+
+
+
+    <!-- -------------------------MENU' CREAZIONE PARTITA-------------------------- -->
 
     <div v-if="mostraModale" class="modal-overlay">
       <div class="modal-box">
@@ -238,6 +245,7 @@ const storicoFiltrato = computed(() => {
           </div>
         </div>
 
+        <!-- -----PARTE PERSONALIZZATA---- --->
         <button class="btn-personalizza" @click="modalitaPersonalizzata = !modalitaPersonalizzata">
           {{ modalitaPersonalizzata ? '▲ Chiudi Personalizzazione' : '▼ Personalizza...' }}
         </button>
@@ -260,6 +268,11 @@ const storicoFiltrato = computed(() => {
         </div>
       </div>
     </div>
+
+
+
+    <!-- -------------------------CRONOLOGIA PARTITE------------------------ -->
+
     <div v-if="modaleStorico" class="modal-overlay" @click.self="ChiudiStorico">
       <div class="modal-content storico-modal">
         <h2>Storico Partite</h2>
@@ -326,18 +339,16 @@ const storicoFiltrato = computed(() => {
 
 <style scoped>
 /* Stili del menu principale */
-
 #menu {
   margin: 3% auto; /* Lo centra orizzontalmente */
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content : center;
   padding: 2rem 0; /* Spazio interno invece di usare un'altezza rigida */
   width: 90%; /* Più largo sugli schermi piccoli */
   max-width: 500px; /* Evita che diventi gigante sugli schermi grandi */
-  min-height: 60vh; /* Permette al contenitore di espandersi se i bottoni hanno bisogno di spazio */
-  background-color: var(--bg-color);
-  border-radius: 12px;
+  min-height: 700px; /* Permette al contenitore di espandersi se i bottoni hanno bisogno di spazio */
+  height : fit-content;
 }
 
 /* Targetizziamo solo i bottoni dentro il menu per non rompere i modali */
@@ -349,8 +360,13 @@ const storicoFiltrato = computed(() => {
   padding: 12px 20px;
   cursor: pointer;
   flex-shrink: 0; /* Impedisce a Flexbox di schiacciare il bottone */
-  border-radius: 8px;
+  border-radius: 10px;
   min-height: 50px; /* Garantisce una zona di tap comoda da mobile */
+  border : none;
+  background-color: white;
+}
+#menu > button:hover, .btn-small:hover {
+  background-color: color-mix(in srgb, var(--bg-color),white 80%);
 }
 
 /* Stili per la casella "Unisciti" */
@@ -369,6 +385,7 @@ const storicoFiltrato = computed(() => {
   width: 80%;
   border-radius: 8px;
   box-sizing: border-box; /* Assicura che il padding non sfondi la larghezza */
+  border : none;
 }
 
 .btn-small {
@@ -394,7 +411,7 @@ const storicoFiltrato = computed(() => {
 
 /* Il riquadro bianco centrale */
 .modal-box {
-  background: #f4f4f4;
+  background: rgb(240, 240, 240);
   padding: 30px;
   border-radius: 12px;
   width: 90%;
@@ -426,8 +443,8 @@ const storicoFiltrato = computed(() => {
 
 /* Classe aggiunta dinamicamente da Vue quando il bottone è selezionato */
 .btn-scelta.attivo {
-  border-color: #42b983;
-  background: #e6f7ef;
+  border-color: var(--bg-color);
+  background: color-mix(in srgb, var(--bg-color), white 85%);
   font-weight: bold;
 }
 
@@ -479,7 +496,7 @@ const storicoFiltrato = computed(() => {
   font-size: 1.2rem;
   margin: 0;
   flex: 2;
-  background: #42b983;
+  background: var(--bg-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -495,6 +512,8 @@ const storicoFiltrato = computed(() => {
   color: white;
   min-width: 350px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+  scrollbar-color: color-mix(in srgb, var(--bg-color), #141414 80%)
+    color-mix(in srgb, var(--bg-color), #3d3d3d 80%);
 }
 
 .controlli-storico {
@@ -509,7 +528,7 @@ const storicoFiltrato = computed(() => {
 .controlli-storico select {
   padding: 5px;
   border-radius: 4px;
-  background-color: #333;
+  background-color: color-mix(in srgb, var(--bg-color), #222222 90%);
   color: white;
   border: 1px solid #555;
 }
@@ -524,7 +543,7 @@ const storicoFiltrato = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--bg-color), #222222 90%);
   margin-bottom: 10px;
   padding: 15px;
   border-radius: 8px;
@@ -534,7 +553,7 @@ const storicoFiltrato = computed(() => {
 }
 
 .riga-partita:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--bg-color), #222222 80%);
 }
 
 .dettagli-partita {
@@ -594,14 +613,14 @@ const storicoFiltrato = computed(() => {
 
 .btn-chiudi {
   margin: 20px auto 0 auto;
-  background-color: #555;
+  background-color: color-mix(in srgb, var(--bg-color), black 20%);
   color: white;
-  padding: 10px 20px;
+  padding: 10px 25px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 .btn-chiudi:hover {
-  background-color: #777;
+ background-color: color-mix(in srgb, var(--bg-color), black 40%);
 }
 </style>

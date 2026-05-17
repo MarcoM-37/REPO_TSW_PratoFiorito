@@ -269,11 +269,13 @@ onMounted(avvioShop)
     <Errore v-else-if="errore" :messaggio="errore" @riprova="avvioShop"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
+      <!-- --------------------------SALDO----------------------- -->
       <div id="div_soldi">
         <!-- Controlla se l'utente esiste, altrimenti mostra 0 -->
         <label>Saldo disponibile : {{ sessione.utente ? sessione.utente.valuta : 0 }} 💰</label>
       </div>
-
+      
+      <!-- -------------------TEMI------------------------------ -->
       <div id="div_temi">
         <h2>Temi:</h2>
         <div class="riga_oggetti">
@@ -290,6 +292,7 @@ onMounted(avvioShop)
         </div>
       </div>
 
+      <!-- -------------------SFONDI------------------------------ -->
       <div id="div_sfondi">
         <h2>Sfondi:</h2>
         <div class="riga_oggetti">
@@ -306,6 +309,7 @@ onMounted(avvioShop)
         </div>
       </div>
 
+      <!-- -------------------ICONE------------------------------ -->
       <div id="div_icone">
         <h2>Icone:</h2>
         <div class="riga_oggetti">
@@ -322,6 +326,7 @@ onMounted(avvioShop)
         </div>
       </div>
 
+      <!-- -------------------MUSICHE------------------------------ -->
       <div id="div_musiche">
         <h2>Tracce Musicali:</h2>
         <div class="riga_oggetti">
@@ -354,6 +359,9 @@ onMounted(avvioShop)
   text-align: right;
   padding: 10px;
   width: 100%;
+  position: sticky;
+  top:0;
+  background-color: var(--bg-color);
 }
 
 #div_temi,

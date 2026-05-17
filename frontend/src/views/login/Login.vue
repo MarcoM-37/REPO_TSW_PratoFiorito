@@ -105,11 +105,10 @@ const gestisciLogin = async () => {
   margin: 10vh auto;
   width: 90%;
   max-width: 400px;
-  background-color: var(--bg-color);
   padding: 30px;
   border-radius: 12px;
   box-sizing: border-box;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  height : fit-content;
 }
 
 #div_email,
@@ -134,14 +133,14 @@ input {
 
 /* Contenitore bottoni: colonna su mobile, riga su desktop */
 #div_bottoni {
-  margin-top: 30px;
+  margin-top: 90px;
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
 button {
-  padding: 12px;
+  padding: 10px;
   font-size: 1rem;
   cursor: pointer;
   border-radius: 6px;

@@ -333,6 +333,7 @@ const mettiBandierina = (x, y) => {
     ></Loading>
 
     <div v-else id="zonaPartita" class="finestra">
+      <!-- -----------------HEADER------------- -->
       <div class="header-partita">
         <div class="info-stanza">
           <span
@@ -343,6 +344,7 @@ const mettiBandierina = (x, y) => {
         <button class="btn-invita" @click="ApriInviti">➕ Invita Amici</button>
       </div>
 
+      <!-- -----------------STATISTICHE------------- -->
       <div id="hud-statistiche">
         <div class="stat-box">
           <span class="icona">⏱️</span><span class="valore">{{ tempoFormattato }}</span>
@@ -355,13 +357,14 @@ const mettiBandierina = (x, y) => {
         </div>
       </div>
 
+      <!-- -----------------GLIGLIA------------- -->
       <div class="grid-container">
         <div v-for="(riga, y) in griglia" :key="'riga-' + y" class="riga-flex">
           <div
             v-for="(cella, x) in riga"
             :key="'cella-' + x"
             class="cella"
-            :class="{ scoperta: cella.isRevealed }"
+            :class="{ scoperta: cella.isRevealed, cella_small: parametroDim > 40 }"
             @click="scopriCella(x, y)"
             @contextmenu.prevent="mettiBandierina(x, y)"
           >
@@ -376,6 +379,7 @@ const mettiBandierina = (x, y) => {
         </div>
       </div>
 
+      <!-- -----------------PULSANTI------------- -->
       <div id="div_pulsanti">
         <button
           class="pulsanti"
@@ -394,6 +398,7 @@ const mettiBandierina = (x, y) => {
       </div>
     </div>
 
+    <!-- -----------------CHAT------------- -->
     <button id="btn-chat" @click="apriChat">
       💬 Chat
       <span v-if="notificheChat > 0" class="badge-notifica">{{ notificheChat }}</span>
@@ -491,12 +496,12 @@ const mettiBandierina = (x, y) => {
 }
 
 #zonaPartita {
-  margin-top: 5%;
+  height : fit-content;
+  margin-top: 2%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
-  background-color: var(--bg-color);
+  padding: 2rem 1rem; 
 }
 
 #div_pulsanti {
@@ -541,6 +546,10 @@ const mettiBandierina = (x, y) => {
   font-size: 1.2rem;
   user-select: none;
   flex-shrink: 0;
+}
+.cella_small {
+  width : 25px;
+  height : 25px;
 }
 
 /* Classe applicata dinamicamente da Vue quando cella.isRevealed è true */

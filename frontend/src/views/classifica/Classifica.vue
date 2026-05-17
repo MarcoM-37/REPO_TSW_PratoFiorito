@@ -81,8 +81,8 @@ onMounted(caricaClassifica)
 
 <style scoped>
 #div_classifica {
-  width: 40%;
-  max-width: 600px;
+  width: 50%;
+  max-width: 650px;
   margin: 5vh auto;
   padding: 30px;
 }

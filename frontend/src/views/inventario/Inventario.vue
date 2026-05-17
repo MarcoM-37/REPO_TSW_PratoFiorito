@@ -75,6 +75,8 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
+
+      <!-- -----------------------TEMI--------------- -->
       <div id="div_temi">
         <h2>Temi:</h2>
         <div class="riga_oggetti">
@@ -94,6 +96,7 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
         </div>
       </div>
 
+      <!-- -----------------------SFONDI--------------- -->
       <div id="div_sfondi">
         <h2>Sfondi:</h2>
         <div class="riga_oggetti">
@@ -113,6 +116,7 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
         </div>
       </div>
 
+      <!-- -----------------------ICONE--------------- -->
       <div id="div_icone">
         <h2>Icone Profilo:</h2>
         <div class="riga_oggetti">
@@ -139,13 +143,13 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
 #finestra_shop {
   margin: 5vh 0;
   width: 40%;
-  height: 80%;
+  height: fit-content;
 }
 
 #div_temi,
 #div_sfondi,
 #div_icone {
-  margin: 10px 10px;
+  margin: 20px 10px 30px;
   padding: 10px 10px 0 10px;
   border-radius: 5px;
   background-color: color-mix(in srgb, var(--bg-color), white 20%);

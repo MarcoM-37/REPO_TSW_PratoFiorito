@@ -152,6 +152,8 @@ onUnmounted(() => {
     <Loading v-if="caricamento" messaggio="Caricamento profilo..."></Loading>
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaDatiProfilo"></Errore>
 
+
+    <!-- -------------------------------------------HEADER----------------------------------- -->
     <div v-else id="div_profilo" class="finestra">
       <div id="header-profilo">
         <div id="div_nome_icona">
@@ -175,9 +177,11 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- ---------------------------------------LISTA AMICI---------------------------------------- -->
       <div id="div_listaAmici">
         <h3>Lista Amici</h3>
         <div id="box_listaAmici">
+          <!-- ------------RICHIESTE AMICIZIA--------- -->
           <div v-if="richiesteRicevute.length > 0" class="sezione-amici">
             <h4>Ricevute</h4>
             <div
@@ -204,7 +208,7 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-
+          <!-- -----------------RICHIESTE INVIATE------------ -->
           <div v-if="richiesteInviate.length > 0" class="sezione-amici">
             <h4>In Attesa...</h4>
             <div
@@ -225,7 +229,7 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
-
+          <!-- ----------------LISTA EFFETTIVA---------- -->
           <hr
             v-if="
               (richiesteRicevute.length > 0 || richiesteInviate.length > 0) && listaAmici.length > 0
@@ -255,7 +259,7 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
-
+          <!-- -----NO AMICI E NO RICHIESTE----- -->
           <div
             v-if="
               listaAmici.length === 0 &&
@@ -270,6 +274,7 @@ onUnmounted(() => {
         <button class="btn-aggiungi" @click="mostraAggiungi = true">Aggiungi Giocatore</button>
       </div>
 
+      <!-- ------------------AGGIUNGI AMICO-------------------- -->
       <div v-if="mostraAggiungi" id="outer_aggiungiAmico">
         <div id="inner_aggiungiAmico">
           <h3>Invia richiesta:</h3>
@@ -285,6 +290,7 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- ----------------------MOSTRA PROFILO AMICO---------------- -->
       <div v-if="mostraProfiloAmico" class="modal-amico-overlay">
         <div class="modal-amico-content">
           <button class="btn-chiudi-amico" @click="mostraProfiloAmico = false">X</button>
@@ -327,6 +333,7 @@ onUnmounted(() => {
 #div_profilo {
   width: 90%;
   max-width: 600px;
+  max-height: 78%;
   margin-top: 4%;
   padding: 2rem;
   display: flex;
@@ -379,7 +386,9 @@ onUnmounted(() => {
   padding: 15px;
   margin: 10px 0;
   max-height: 250px;
-  overflow-y: auto;
+  overflow-y:auto;
+  scrollbar-color: color-mix(in srgb, var(--bg-color), black 50%)
+    var(--bg-color);
 }
 
 .sezione-amici h4 {

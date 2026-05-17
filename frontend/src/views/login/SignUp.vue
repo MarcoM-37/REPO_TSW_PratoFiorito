@@ -126,11 +126,10 @@ const gestisciSignup = async () => {
   margin: 5vh auto;
   width: 90%;
   max-width: 450px;
-  background-color: var(--bg-color);
   padding: 30px;
   border-radius: 12px;
   box-sizing: border-box;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  height: fit-content;
 }
 
 #div_username,
@@ -155,7 +154,7 @@ input {
 }
 
 #div_bottoni {
-  margin-top: 25px;
+  margin-top: 90px;
   display: flex;
   flex-direction: column;
   gap: 15px;
