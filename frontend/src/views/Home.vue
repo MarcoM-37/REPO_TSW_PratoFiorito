@@ -347,7 +347,6 @@ const storicoFiltrato = computed(() => {
   padding: 2rem 0; /* Spazio interno invece di usare un'altezza rigida */
   width: 90%; /* Più largo sugli schermi piccoli */
   max-width: 500px; /* Evita che diventi gigante sugli schermi grandi */
-  min-height: 700px; /* Permette al contenitore di espandersi se i bottoni hanno bisogno di spazio */
   height : fit-content;
 }
 
