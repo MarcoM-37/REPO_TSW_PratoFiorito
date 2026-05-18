@@ -629,6 +629,9 @@ const storicoFiltrato = computed(() => {
     min-width: 0px;
     max-width: 95vw;
   }
+  .modal-content {
+    margin-top: 70px;
+  }
 }
 
 </style>
