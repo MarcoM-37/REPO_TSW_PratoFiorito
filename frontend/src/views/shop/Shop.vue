@@ -274,7 +274,7 @@ onMounted(avvioShop)
         <!-- Controlla se l'utente esiste, altrimenti mostra 0 -->
         <label>Saldo disponibile : {{ sessione.utente ? sessione.utente.valuta : 0 }} 💰</label>
       </div>
-      
+
       <!-- -------------------TEMI------------------------------ -->
       <div id="div_temi">
         <h2>Temi:</h2>
@@ -347,9 +347,9 @@ onMounted(avvioShop)
 
 <style scoped>
 #finestra_shop {
-  margin: 5vh 0;
-  width: 40%;
-  height: 80%;
+  width: 90%;
+  max-width: 800px;
+  height: fit-content;
 }
 
 #div_soldi {
@@ -360,7 +360,7 @@ onMounted(avvioShop)
   padding: 10px;
   width: 100%;
   position: sticky;
-  top:0;
+  top: 0;
   background-color: var(--bg-color);
 }
 

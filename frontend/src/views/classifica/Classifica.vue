@@ -42,13 +42,11 @@ onMounted(caricaClassifica)
 
 <template>
   <div id="main">
-
     <Loading v-if="caricamento" messaggio="Caricamento classifica..."></Loading>
 
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
 
     <div v-else id="div_classifica" class="finestra">
-
       <h2>🏆 CLASSIFICA GLOBALE</h2>
 
       <div
@@ -81,8 +79,9 @@ onMounted(caricaClassifica)
 
 <style scoped>
 #div_classifica {
-  width: 50%;
-  max-width: 650px;
+  width: 90%;
+  max-width: 800px;
+  height: fit-content;
   margin: 5vh auto;
   padding: 30px;
 }

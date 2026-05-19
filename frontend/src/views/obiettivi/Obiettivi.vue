@@ -44,7 +44,6 @@ onMounted(caricaObiettivi)
 
 <template>
   <div id="main">
-
     <Loading v-if="caricamento" messaggio="Caricamento Obiettivi"></Loading>
 
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaObiettivi"></Errore>
@@ -80,10 +79,9 @@ onMounted(caricaObiettivi)
 
 <style scoped>
 #div_obiettivi {
-  margin: 5vh auto;
-  width: 40%;
-  max-width: 600px;
-  max-height: 70vh;
+  width: 90%;
+  max-width: 800px;
+  height: fit-content;
   padding: 30px;
   overflow-y: auto;
   scrollbar-color: color-mix(in srgb, var(--bg-color), black 50%) var(--bg-color);
@@ -146,8 +144,15 @@ h3 {
     width: 80%;
     padding: 15px;
   }
-  h3 { letter-spacing: 0px; font-size : 18px;}
-  .raggiunto:hover { border-left: solid 0px green; }
-  .nonRaggiunto:hover { border-left: solid 0px red; }
+  h3 {
+    letter-spacing: 0px;
+    font-size: 18px;
+  }
+  .raggiunto:hover {
+    border-left: solid 0px green;
+  }
+  .nonRaggiunto:hover {
+    border-left: solid 0px red;
+  }
 }
 </style>

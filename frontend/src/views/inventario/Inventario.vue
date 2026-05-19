@@ -75,7 +75,6 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
-
       <!-- -----------------------TEMI--------------- -->
       <div id="div_temi">
         <h2>Temi:</h2>
@@ -141,8 +140,8 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
 
 <style scoped>
 #finestra_shop {
-  margin: 5vh 0;
-  width: 40%;
+  width: 90%;
+  max-width: 800px;
   height: fit-content;
 }
 
