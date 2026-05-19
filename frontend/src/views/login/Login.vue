@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessione, notifica, skin } from '../../ambiente.js'
 import { socket } from '../../socket.js'
+import { apiFetch } from '../../api/index.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
 
@@ -29,39 +30,27 @@ const refreshLogin = () => {
 
 const gestisciLogin = async () => {
   caricamento.value = true
+  errore.value = null
   try {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    const dati = await apiFetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value,
-      }),
+      body: JSON.stringify({ email: email.value, password: password.value }),
     })
 
-    const dati = await response.json()
+    sessione.setUtente(dati.user)
+    localStorage.setItem('token_campo_minato', dati.token)
 
-    // Usiamo response.ok che controlla se lo stato HTTP è positivo (es. 200 OK)
-    if (response.ok) {
-      sessione.setUtente(dati.user)
-      localStorage.setItem('token_campo_minato', dati.token)
+    skin.cambiaTema(dati.user.tema)
+    skin.cambiaSfondo(
+      dati.user.sfondo.startsWith('url') ? dati.user.sfondo : `url('${dati.user.sfondo}')`,
+    )
+    skin.cambiaIcona(dati.user.icona)
 
-      // Applichiamo la skin ricevuta dal db
-      skin.cambiaTema(dati.user.tema)
-      skin.cambiaSfondo(
-        dati.user.sfondo.startsWith('url') ? dati.user.sfondo : `url('${dati.user.sfondo}')`,
-      )
-      skin.cambiaIcona(dati.user.icona)
-
-      socket.auth = { token: dati.token }
-      socket.connect()
-      router.push('/')
-    } else {
-      // Se fallisce, usiamo l'errore del backend o un messaggio generico
-      notifica.mostra(dati.error || 'Errore sconosciuto durante il login')
-    }
+    socket.auth = { token: dati.token }
+    socket.connect()
+    router.push('/')
   } catch (err) {
-    console.error('Errore di connessione:', err)
+    // Mostriamo in rosso l'errore
     errore.value = err.message
   } finally {
     caricamento.value = false

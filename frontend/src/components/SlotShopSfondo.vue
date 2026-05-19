@@ -33,5 +33,5 @@ const emits = defineEmits(['prova', 'acquisto', 'equipaggia'])
 </template>
 
 <style scoped>
-@import './style_shop.css';
+@import './style_slot.css';
 </style>

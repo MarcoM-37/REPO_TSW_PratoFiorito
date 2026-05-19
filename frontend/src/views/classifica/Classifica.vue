@@ -4,7 +4,7 @@ import { socket } from '../../socket.js'
 import { sessione } from '../../ambiente.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
-const API_URL = import.meta.env.VITE_SOCKET_URL
+import { apiFetch } from '../../api/index.js'
 
 const listaClassifica = ref([])
 const errore = ref(null)
@@ -14,22 +14,17 @@ const caricaClassifica = async () => {
   caricamento.value = true
   errore.value = null
   try {
-    const response = await fetch(`${API_URL}/api/stats/classifica`)
-    if (!response.ok) throw new Error('Errore nel caricamento classifica')
-
-    const dati = await response.json()
+    const dati = await apiFetch('/api/stats/classifica')
 
     listaClassifica.value = dati.classifica
 
-    // Controlliamo se sei il primo in classifica
     if (sessione.utente && listaClassifica.value.length > 0) {
       if (listaClassifica.value[0].nome === sessione.utente.username) {
         socket.emit('sblocca_singolo', 'reach_top_rank')
       }
     }
-
-    console.log('Classifica caricata correttamente:', listaClassifica.value)
   } catch (err) {
+    // L'errore viene catturato automaticamente e mostrato nella UI
     errore.value = err.message
     console.error(err)
   } finally {

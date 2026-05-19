@@ -10,19 +10,23 @@ const emits = defineEmits(['acquisto', 'prova'])
     <span>{{ item.nome }}</span>
 
     <div class="azioni-item" v-if="!listaAcquisti.includes(item.id_oggetto)">
-      <button class="btn-prova" @click="$emit('prova', item)"> {{ inProva.musica === item.id_oggetto ? '⏹️ Stop' : '▶️ Ascolta 10s' }} </button>
+      <button class="btn-prova" @click="$emit('prova', item)">
+        {{ inProva.musica === item.id_oggetto ? '⏹️ Stop' : '▶️ Ascolta 10s' }}
+      </button>
       <button class="btn-compra" @click="$emit('acquisto', item)">💰 {{ item.prezzo }}</button>
     </div>
 
     <div class="azioni-item" v-else>
-      <button class="btn-prova" @click="$emit('prova', item)"> {{ inProva.musica === item.id_oggetto ? '⏹️ Stop' : '▶️ Ascolta 10s' }} </button>
+      <button class="btn-prova" @click="$emit('prova', item)">
+        {{ inProva.musica === item.id_oggetto ? '⏹️ Stop' : '▶️ Ascolta 10s' }}
+      </button>
       <span class="span_acquisto">Acquistato ✅</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-@import './style_shop.css';
+@import './style_slot.css';
 
 .anteprima_musica {
   font-size: 250%;

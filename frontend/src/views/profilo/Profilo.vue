@@ -4,8 +4,7 @@ import { skin, sessione, notifica } from '../../ambiente.js'
 import { socket } from '../../socket.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
-
-const API_URL = import.meta.env.VITE_SOCKET_URL
+import { apiFetch } from '../../api/index.js'
 
 // Stato del giocatore corrente
 const stats = ref({ giocate: 0, punti: 0, winrate: 0, valuta: 0 })
@@ -24,19 +23,11 @@ const mostraProfiloAmico = ref(false)
 const amicoSelezionato = ref({ user: {}, obiettivi: [] })
 
 const caricaDatiProfilo = async (silenzioso = false) => {
-  if (!silenzioso) caricamento.value = true // Mostra il loading solo se non è silenzioso
+  if (!silenzioso) caricamento.value = true
   errore.value = null
   try {
-    const token = localStorage.getItem('token_campo_minato')
-    if (!token) return
-
-    // Carica Statistiche
-    const resStats = await fetch(`${API_URL}/api/stats/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!resStats.ok) throw new Error('Errore caricamento statistiche')
-    const datiStats = await resStats.json()
-
+    // Chiamata per le statistiche
+    const datiStats = await apiFetch('/api/stats/me')
     const giocate = parseInt(datiStats.user.partite_giocate) || 0
     const vittorie = parseInt(datiStats.user.vittorie_totali) || 0
 
@@ -47,19 +38,13 @@ const caricaDatiProfilo = async (silenzioso = false) => {
       valuta: datiStats.user.valuta,
     }
 
-    // Carica Amici
-    const resAmici = await fetch(`${API_URL}/api/amici`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!resAmici.ok) throw new Error('Errore caricamento amici')
-    const datiAmici = await resAmici.json()
-
+    // Chiamata per gli amici
+    const datiAmici = await apiFetch('/api/amici')
     listaAmici.value = datiAmici.amici
     richiesteRicevute.value = datiAmici.ricevute
     richiesteInviate.value = datiAmici.inviate
   } catch (err) {
     errore.value = err.message
-    console.error(err)
   } finally {
     caricamento.value = false
   }
@@ -67,47 +52,28 @@ const caricaDatiProfilo = async (silenzioso = false) => {
 
 const AggiungiAmico = async () => {
   try {
-    const token = localStorage.getItem('token_campo_minato')
-    const response = await fetch(`${API_URL}/api/amici/richiedi`, {
+    const dati = await apiFetch('/api/amici/richiedi', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ nome: nomeAmico.value }),
     })
 
-    const dati = await response.json()
-    if (response.ok) {
-      notifica.mostra(dati.message)
-      mostraAggiungi.value = false
-      nomeAmico.value = ''
-      caricaDatiProfilo()
-    } else {
-      notifica.mostra(dati.error)
-    }
+    notifica.mostra(dati.message)
+    mostraAggiungi.value = false
+    nomeAmico.value = ''
+    caricaDatiProfilo()
   } catch (err) {
-    notifica.mostra('Errore di connessione')
+    notifica.mostra(err.message)
   }
 }
 
 const AzioneAmicizia = async (idAmico, azione, messaggioSuccesso) => {
   try {
-    const token = localStorage.getItem('token_campo_minato')
-    const response = await fetch(`${API_URL}/api/amici/${azione}`, {
+    await apiFetch(`/api/amici/${azione}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ id_amico: idAmico }),
     })
-
-    if (response.ok) {
-      // Usiamo il messaggio personalizzato passato dal bottone HTML
-      notifica.mostra(messaggioSuccesso)
-      caricaDatiProfilo()
-    }
+    notifica.mostra(messaggioSuccesso)
+    caricaDatiProfilo()
   } catch (err) {
     console.error('Errore:', err)
   }
@@ -115,15 +81,9 @@ const AzioneAmicizia = async (idAmico, azione, messaggioSuccesso) => {
 
 const VisionaAmico = async (idAmico) => {
   try {
-    const token = localStorage.getItem('token_campo_minato')
-    const res = await fetch(`${API_URL}/api/stats/utente/${idAmico}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) {
-      const dati = await res.json()
-      amicoSelezionato.value = dati
-      mostraProfiloAmico.value = true
-    }
+    const dati = await apiFetch(`/api/stats/utente/${idAmico}`)
+    amicoSelezionato.value = dati
+    mostraProfiloAmico.value = true
   } catch (err) {
     notifica.mostra("Impossibile caricare il profilo dell'amico")
   }
@@ -151,7 +111,6 @@ onUnmounted(() => {
   <div id="main">
     <Loading v-if="caricamento" messaggio="Caricamento profilo..."></Loading>
     <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaDatiProfilo"></Errore>
-
 
     <!-- -------------------------------------------HEADER----------------------------------- -->
     <div v-else id="div_profilo" class="finestra">
@@ -386,9 +345,8 @@ onUnmounted(() => {
   padding: 15px;
   margin: 10px 0;
   max-height: 250px;
-  overflow-y:auto;
-  scrollbar-color: color-mix(in srgb, var(--bg-color), black 50%)
-    var(--bg-color);
+  overflow-y: auto;
+  scrollbar-color: color-mix(in srgb, var(--bg-color), black 50%) var(--bg-color);
 }
 
 .sezione-amici h4 {

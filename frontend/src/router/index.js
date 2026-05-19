@@ -7,7 +7,7 @@ import Partita from '@/views/partita/Partita.vue'
 import Inventario from '@/views/inventario/Inventario.vue'
 import Obiettivi from '@/views/obiettivi/Obiettivi.vue'
 import Classifica from '@/views/classifica/Classifica.vue'
-import Profilo from '@/views/login/Profilo.vue'
+import Profilo from '@/views/profilo/Profilo.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

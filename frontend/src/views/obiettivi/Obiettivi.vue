@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { sessione } from '../../ambiente.js'
+import { apiFetch } from '../../api/index.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
-const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const obiettiviRaggiunti = ref([])
 const obiettiviNonRaggiunti = ref([])
@@ -14,26 +14,11 @@ const caricaObiettivi = async () => {
   caricamento.value = true
   errore.value = null
   try {
-    const token = localStorage.getItem('token_campo_minato')
-
-    // Se l'utente non è loggato, blocchiamo la funzione
-    if (!token || !sessione.utente) return
-
-    // Passiamo l'header Authorization per superare il middleware 'auth'
-    const response = await fetch(`${API_URL}/api/stats/obiettivi`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    if (!response.ok) throw new Error('Errore nel caricamento degli obiettivi')
-
-    const dati = await response.json()
+    const dati = await apiFetch('/api/stats/obiettivi')
     obiettiviRaggiunti.value = dati.raggiunti
     obiettiviNonRaggiunti.value = dati.non_raggiunti
-
-    console.log('Obiettivi caricati correttamente')
   } catch (err) {
     errore.value = err.message
-    console.error(err)
   } finally {
     caricamento.value = false
   }

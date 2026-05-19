@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { sessione, notifica, skin } from '../../ambiente.js'
 import { socket } from '../../socket.js'
+import { apiFetch } from '../../api/index.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
 
@@ -33,19 +34,11 @@ const refreshSignup = () => {
 }
 
 const gestisciSignup = async () => {
-  // 1. Controllo validità password lato client
-  if (password.value !== confermaPassword.value) {
-    notifica.mostra('ERRORE: Le password non combaciano')
-    return false // Interrompiamo l'esecuzione qui
-  }
-
   caricamento.value = true
-
+  errore.value = null
   try {
-    // 2. Chiamata al server
-    const response = await fetch(`${API_URL}/api/auth/signup`, {
+    const dati = await apiFetch('/api/auth/signup', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: username.value,
         email: email.value,
@@ -53,29 +46,21 @@ const gestisciSignup = async () => {
       }),
     })
 
-    const dati = await response.json()
+    // Niente più if(response.ok). Se il codice arriva qui, il login è riuscito!
+    sessione.setUtente(dati.user)
+    localStorage.setItem('token_campo_minato', dati.token)
 
-    // 3. Verifichiamo se il server ha risposto con successo
-    if (response.ok) {
-      sessione.setUtente(dati.user)
-      localStorage.setItem('token_campo_minato', dati.token)
+    skin.cambiaTema(dati.user.tema)
+    skin.cambiaSfondo(
+      dati.user.sfondo.startsWith('url') ? dati.user.sfondo : `url('${dati.user.sfondo}')`,
+    )
+    skin.cambiaIcona(dati.user.icona)
 
-      // Applichiamo la skin ricevuta dal db
-      skin.cambiaTema(dati.user.tema)
-      skin.cambiaSfondo(
-        dati.user.sfondo.startsWith('url') ? dati.user.sfondo : `url('${dati.user.sfondo}')`,
-      )
-      skin.cambiaIcona(dati.user.icona)
-
-      socket.auth = { token: dati.token }
-      socket.connect()
-      router.push('/')
-    } else {
-      // 4. Gestione errori forniti dal backend
-      notifica.mostra(dati.error || 'Errore sconosciuto durante la registrazione')
-    }
+    socket.auth = { token: dati.token }
+    socket.connect()
+    router.push('/')
   } catch (err) {
-    console.error('Errore di connessione:', err)
+    // Mostriamo in rosso l'errore (es. "Credenziali non valide")
     errore.value = err.message
   } finally {
     caricamento.value = false

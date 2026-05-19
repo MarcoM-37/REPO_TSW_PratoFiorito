@@ -1,13 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { skin, sessione, notifica } from '../../ambiente.js'
+import { skin, notifica } from '../../ambiente.js'
+import { apiFetch } from '../../api/index.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
 import SlotInventarioTema from '../../components/SlotInventarioTema.vue'
 import SlotInventarioSfondo from '../../components/SlotInventarioSfondo.vue'
 import SlotInventarioIcona from '../../components/SlotInventarioIcona.vue'
-
-const API_URL = import.meta.env.VITE_SOCKET_URL
 
 const listaAcquisti = ref([])
 const errore = ref(null)
@@ -21,27 +20,10 @@ const caricaOggettiAcquistati = async () => {
   caricamento.value = true
   errore.value = null
   try {
-    // Recuperiamo il token di sicurezza
-    const token = localStorage.getItem('token_campo_minato')
-
-    // Se l'utente non è loggato, blocchiamo la funzione
-    if (!token || !sessione.utente) return
-
-    // Chiamiamo la rotta passando il token per farci riconoscere
-    const response = await fetch(`${API_URL}/api/shop/mio`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    if (!response.ok) throw new Error("Errore nel caricamento dell'inventario")
-
-    const dati = await response.json()
-
-    // Il server di auth.js ci risponde con "inventario"
+    const dati = await apiFetch('/api/shop/mio')
     listaAcquisti.value = dati.inventario
-    console.log('Inventario personale caricato correttamente:', listaAcquisti.value)
   } catch (err) {
     errore.value = err.message
-    console.error(err)
   } finally {
     caricamento.value = false
   }
@@ -56,10 +38,9 @@ const attivaOggetto = (item) => {
   // Invia il salvataggio al Database in background
   const token = localStorage.getItem('token_campo_minato')
   if (token) {
-    fetch(`${API_URL}/api/shop/equipaggia`, {
+    fetch(`/api/shop/equipaggia`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      // I preset base non hanno un ID numerico (es. 'tema_base'), la nostra rotta sa come gestirli
       body: JSON.stringify({ id_oggetto: item.id_oggetto || item.id, tipo: item.tipo }),
     }).catch((err) => console.error('Errore salvataggio DB:', err))
   }

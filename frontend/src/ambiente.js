@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { apiFetch } from './api/index.js'
 
 // Recuperiamo l'aspetto salvato dal disco (se esiste)
 const _rawSkin = localStorage.getItem('skin_campo_minato')
@@ -142,23 +143,19 @@ export const playerMusicale = reactive({
 
   // Carica i brani dal database
   async aggiornaLibreria() {
-    const token = localStorage.getItem('token_campo_minato')
-    if (!token) return
+    if (!sessione.utente) return
 
     try {
-      const API_URL = import.meta.env.VITE_SOCKET_URL
-      const res = await fetch(`${API_URL}/api/shop/mio`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const dati = await res.json()
-        this.impostaLibreria(dati.inventario)
-        console.log('Libreria musicale aggiornata!')
-      } else if (res.status === 401) {
-        // Se il server risponde 401 il token è scaduto
-        sessione.logout() // Pulisce istantaneamente il localStorage
-      }
+      const dati = await apiFetch('/api/shop/mio')
+      this.impostaLibreria(dati.inventario)
     } catch (err) {
+      // Intercettiamo l'errore del backend per il token non valido
+      if (
+        err.message === 'Token non valido o scaduto' ||
+        err.message === 'Accesso negato. Token mancante'
+      ) {
+        sessione.logout()
+      }
       console.error('Errore refresh libreria musicale:', err)
     }
   },

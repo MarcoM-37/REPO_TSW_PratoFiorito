@@ -25,8 +25,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
+.anteprima:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.selezionato {
+  border: solid green 3px;
+}
+
+/* Azioni Shop */
 .azioni-item {
   display: flex;
   flex-direction: column;
@@ -36,18 +50,21 @@
   align-items: center;
 }
 
-.btn-prova {
-  background-color: #ddd;
-  color: #333;
+.btn-prova,
+.btn-compra {
   border: none;
   padding: 6px 10px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
   width: 90%;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
+.btn-prova {
+  background-color: #ddd;
+  color: #333;
+}
 .btn-prova:hover {
   background-color: #ccc;
 }
@@ -55,16 +72,8 @@
 .btn-compra {
   background-color: #ffd700;
   color: #333;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
   font-weight: bold;
-  font-size: 0.9rem;
-  width: 90%;
-  transition: transform 0.1s;
 }
-
 .btn-compra:hover {
   transform: scale(1.05);
 }

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { skin, sessione, notifica, playerMusicale } from '../../ambiente.js'
 import { socket } from '../../socket.js'
+import { apiFetch } from '../../api/index.js'
 import Loading from '../../components/Loading.vue'
 import Errore from '../../components/Errore.vue'
 import SlotShopTema from '../../components/SlotShopTema.vue'
@@ -9,10 +10,8 @@ import SlotShopSfondo from '../../components/SlotShopSfondo.vue'
 import SlotShopIcona from '../../components/SlotShopIcona.vue'
 import SlotShopMusica from '../../components/SlotShopMusica.vue'
 
-const API_URL = import.meta.env.VITE_SOCKET_URL
-
 const listaOggetti = ref([])
-const listaAcquisti = ref([]) //contiene gli id di tutti gli item acquistati, di tali item non verrà visualizzato il prezzo ma solo "ACQUISTATO"
+const listaAcquisti = ref([])
 const errore = ref(null)
 const caricamento = ref(false)
 
@@ -43,25 +42,10 @@ audioAnteprima.volume = 0.5
 const caricaOggettiAcquistati = async () => {
   caricamento.value = true
   try {
-    // Recuperiamo il token di sicurezza dal disco
-    const token = localStorage.getItem('token_campo_minato')
-    if (!token) return
-
-    // Chiamiamo la rotta corretta passando il token nell'intestazione
-    const response = await fetch(`${API_URL}/api/shop/mio`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    if (!response.ok) throw new Error('Errore nel caricamento inventario')
-
-    const dati = await response.json()
-
-    // Il server ci risponde con un array "inventario"
+    const dati = await apiFetch('/api/shop/mio')
     listaAcquisti.value = dati.inventario.map((item) => item.id_oggetto)
-    console.log('Oggetti Acquistati caricati correttamente:', listaAcquisti.value)
   } catch (err) {
     errore.value = err.message
-    console.error(err)
   } finally {
     caricamento.value = false
   }
@@ -70,14 +54,10 @@ const caricaOggettiAcquistati = async () => {
 const caricaShop = async () => {
   caricamento.value = true
   try {
-    const response = await fetch(`${API_URL}/api/shop/oggetti`)
-    if (!response.ok) throw new Error('Errore nel caricamento shop')
-    const dati = await response.json()
+    const dati = await apiFetch('/api/shop/oggetti')
     listaOggetti.value = dati.items
-    console.log('Oggetti caricati correttamente:', listaOggetti.value)
   } catch (err) {
     errore.value = err.message
-    console.error(err)
   } finally {
     caricamento.value = false
   }
@@ -85,22 +65,9 @@ const caricaShop = async () => {
 
 const aggiornaSaldo = async () => {
   try {
-    const token = localStorage.getItem('token_campo_minato')
-    if (!token) return
-
-    const response = await fetch(`${API_URL}/api/stats/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    if (response.ok) {
-      const dati = await response.json()
-
-      // Aggiorniamo la valuta in memoria con quella fresca del DB
-      sessione.utente.valuta = dati.user.valuta
-
-      // Salviamo il dato aggiornato sul disco fisso per non perderlo
-      sessione.setUtente(sessione.utente)
-    }
+    const dati = await apiFetch('/api/stats/me')
+    sessione.utente.valuta = dati.user.valuta
+    sessione.setUtente(sessione.utente)
   } catch (err) {
     console.error('Impossibile aggiornare il saldo:', err)
   }
@@ -179,7 +146,7 @@ const equipaggiaOggetto = (item) => {
   // Invia il salvataggio al Database in background
   const token = localStorage.getItem('token_campo_minato')
   if (token) {
-    fetch(`${API_URL}/api/shop/equipaggia`, {
+    fetch(`/api/shop/equipaggia`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ id_oggetto: item.id_oggetto, tipo: item.tipo }),
@@ -188,56 +155,26 @@ const equipaggiaOggetto = (item) => {
 }
 
 const effettuaAcquisto = async (item) => {
-  // Controllo di sicurezza rapido lato Client
   if (sessione.utente.valuta < item.prezzo) {
     notifica.mostra('Non hai abbastanza monete per acquistare questo oggetto!')
     return
   }
 
   try {
-    const token = localStorage.getItem('token_campo_minato')
-
-    // Chiamata POST al database
-    const response = await fetch(`${API_URL}/api/shop/acquista`, {
+    await apiFetch('/api/shop/acquista', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ id_oggetto: item.id_oggetto }),
     })
 
-    const dati = await response.json()
-
-    if (response.ok) {
-      // L'acquisto è andato a buon fine nel DB
-
-      // Aggiungiamo l'oggetto alla lista
-      listaAcquisti.value.push(item.id_oggetto)
-
-      // Scaliamo i soldi in tempo reale dalla UI e salviamo in locale
-      sessione.utente.valuta -= item.prezzo
-      sessione.setUtente(sessione.utente)
-
-      // Equipaggiamo subito l'oggetto
-      equipaggiaOggetto(item)
-
-      // Chiediamo al server di controllare gli obiettivi degli acquisti
-      socket.emit('aggiorna_progressione')
-
-      // Se l'oggetto comprato è musica, aggiorna il player nell'header
-      if (item.tipo === 'musica') {
-        playerMusicale.aggiornaLibreria()
-      }
-
-      notifica.mostra('Acquisto completato con successo!')
-    } else {
-      // Se il server ha bloccato l'acquisto
-      notifica.mostra(dati.error || "Errore durante l'acquisto.")
-    }
+    listaAcquisti.value.push(item.id_oggetto)
+    sessione.utente.valuta -= item.prezzo
+    sessione.setUtente(sessione.utente)
+    equipaggiaOggetto(item)
+    socket.emit('aggiorna_progressione')
+    if (item.tipo === 'musica') playerMusicale.aggiornaLibreria()
+    notifica.mostra('Acquisto completato con successo!')
   } catch (err) {
-    console.error("Errore di rete durante l'acquisto:", err)
-    notifica.mostra('Impossibile contattare il server.')
+    notifica.mostra(err.message)
   }
 }
 
