@@ -168,7 +168,6 @@ const storicoFiltrato = computed(() => {
 <template>
   <div id="main">
     <div id="menu" class="finestra">
-
       <!-- -------------------------BOTTONI-------------------------- -->
 
       <button @click="ApriModaleCreazione">Crea Nuova Partita</button>
@@ -185,13 +184,11 @@ const storicoFiltrato = computed(() => {
       <button @click="VaiClassifica">Classifica</button>
     </div>
 
-
-
     <!-- -------------------------MENU' CREAZIONE PARTITA-------------------------- -->
 
     <div v-if="mostraModale" class="modal-overlay">
       <div class="modal-box">
-        <h2 style="color: black; margin-bottom: 20px">Impostazioni Partita</h2>
+        <h2 style="margin-bottom: 20px">Impostazioni Partita</h2>
 
         <div class="sezione-impostazioni">
           <h3>Dimensione Campo</h3>
@@ -269,8 +266,6 @@ const storicoFiltrato = computed(() => {
       </div>
     </div>
 
-
-
     <!-- -------------------------CRONOLOGIA PARTITE------------------------ -->
 
     <div v-if="modaleStorico" class="modal-overlay" @click.self="ChiudiStorico">
@@ -340,14 +335,14 @@ const storicoFiltrato = computed(() => {
 <style scoped>
 /* Stili del menu principale */
 #menu {
-  margin: 3% auto; /* Lo centra orizzontalmente */
+  margin: auto;
   display: flex;
   flex-direction: column;
-  justify-content : center;
-  padding: 2rem 0; /* Spazio interno invece di usare un'altezza rigida */
-  width: 90%; /* Più largo sugli schermi piccoli */
-  max-width: 500px; /* Evita che diventi gigante sugli schermi grandi */
-  height : fit-content;
+  justify-content: center;
+  padding: 2rem 0;
+  width: 90%;
+  max-width: 500px;
+  height: fit-content;
 }
 
 /* Targetizziamo solo i bottoni dentro il menu per non rompere i modali */
@@ -361,11 +356,12 @@ const storicoFiltrato = computed(() => {
   flex-shrink: 0; /* Impedisce a Flexbox di schiacciare il bottone */
   border-radius: 10px;
   min-height: 50px; /* Garantisce una zona di tap comoda da mobile */
-  border : none;
+  border: none;
   background-color: white;
 }
-#menu > button:hover, .btn-small:hover {
-  background-color: color-mix(in srgb, var(--bg-color),white 80%);
+#menu > button:hover,
+.btn-small:hover {
+  background-color: color-mix(in srgb, var(--bg-color), white 80%);
 }
 
 /* Stili per la casella "Unisciti" */
@@ -384,7 +380,7 @@ const storicoFiltrato = computed(() => {
   width: 80%;
   border-radius: 8px;
   box-sizing: border-box; /* Assicura che il padding non sfondi la larghezza */
-  border : none;
+  border: none;
 }
 
 .btn-small {
@@ -408,21 +404,25 @@ const storicoFiltrato = computed(() => {
   z-index: 1000; /* Assicura che il modale stia sopra a tutto il resto */
 }
 
-/* Il riquadro bianco centrale */
+/* Il riquadro centrale */
 .modal-box {
-  background: rgb(240, 240, 240);
+  background-color: var(--bg-color);
+  color: white;
   padding: 30px;
   border-radius: 12px;
   width: 90%;
   max-width: 600px;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 5px 5px 30px rgb(0, 0, 0);
+  border: 2px solid color-mix(in srgb, var(--bg-color), white 10%);
 }
 
 .sezione-impostazioni h3 {
-  color: #333;
+  color: white;
   margin-bottom: 10px;
+  letter-spacing: 1px;
 }
+
 .bottoni-preset {
   display: flex;
   justify-content: center;
@@ -434,16 +434,21 @@ const storicoFiltrato = computed(() => {
   font-size: 1rem;
   margin: 0;
   padding: 10px;
-  border: 2px solid #ccc;
-  background: white;
-  color: #333;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
   border-radius: 6px;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-/* Classe aggiunta dinamicamente da Vue quando il bottone è selezionato */
+.btn-scelta:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .btn-scelta.attivo {
-  border-color: var(--bg-color);
-  background: color-mix(in srgb, var(--bg-color), white 85%);
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.2);
   font-weight: bold;
 }
 
@@ -453,52 +458,70 @@ const storicoFiltrato = computed(() => {
   padding: 5px 10px;
   background: none;
   border: none;
-  color: #555;
+  color: #bbb;
   text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-/* Contenitore grigio per gli slider */
+.btn-personalizza:hover {
+  color: white;
+}
+
+/* Contenitore scuro per gli slider */
 .sezione-custom {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #e9e9e9;
+  background: rgba(0, 0, 0, 0.2);
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 20px;
 }
+
 .sezione-custom label {
-  color: #333;
-  font-size: 1.2rem;
-}
-.slider {
-  width: 80%;
-  margin-top: 10px;
+  color: white;
+  font-size: 1.1rem;
 }
 
-/* Contenitore per Annulla e Conferma */
 .modal-azioni {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
   gap: 20px;
 }
+
 .btn-annulla {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin: 0;
   flex: 1;
-  background: #ccc;
-  border: none;
-  border-radius: 8px;
-}
-.btn-conferma {
-  font-size: 1.2rem;
-  margin: 0;
-  flex: 2;
-  background: var(--bg-color);
+  background: #dc3545;
   color: white;
   border: none;
   border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.btn-annulla:hover {
+  filter: brightness(0.9);
+}
+
+.btn-conferma {
+  font-size: 1.1rem;
+  margin: 0;
+  flex: 2;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: filter 0.2s;
+}
+
+.btn-conferma:hover {
+  filter: brightness(1.1);
 }
 
 /* Stili del modale storico */
@@ -621,10 +644,10 @@ const storicoFiltrato = computed(() => {
   cursor: pointer;
 }
 .btn-chiudi:hover {
- background-color: color-mix(in srgb, var(--bg-color), black 40%);
+  background-color: color-mix(in srgb, var(--bg-color), black 40%);
 }
 
-@media only screen and (max-width:800px) {
+@media only screen and (max-width: 800px) {
   .storico-modal {
     min-width: 0px;
     max-width: 95vw;
@@ -633,8 +656,7 @@ const storicoFiltrato = computed(() => {
     margin-top: 70px;
   }
   .lista-partite {
-    height : 40vh;
+    height: 40vh;
   }
 }
-
 </style>

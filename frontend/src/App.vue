@@ -3,8 +3,9 @@ import Header from '@/components/Header.vue'
 import { skin, notifica, toast, sessione, sfx } from '@/ambiente.js'
 import { socket } from '@/socket.js'
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
+const route = useRoute()
 
 //Per il feed
 const feedAperto = ref(false)
@@ -19,6 +20,10 @@ const apriFeed = () => {
 const AccettaInvito = (idStanza) => {
   feedAperto.value = false // Chiudiamo la tendina
   router.push({ path: '/partita/' + idStanza, query: { azione: 'unisciti' } })
+}
+
+const vaiAllaHome = () => {
+  router.push('/')
 }
 
 onMounted(() => {
@@ -108,6 +113,9 @@ watch(
 <template>
   <div id="ambiente">
     <Header />
+    <button v-if="route.path !== '/'" id="btn-torna-home" @click="vaiAllaHome">
+      🏠 Torna alla home
+    </button>
     <main>
       <RouterView />
     </main>
@@ -373,7 +381,12 @@ watch(
   cursor: pointer;
   z-index: 1000;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* per fare in modo che se cliccato da mobile non si illumina di blu */
+  -webkit-tap-highlight-color: rgba(
+    0,
+    0,
+    0,
+    0
+  ); /* per fare in modo che se cliccato da mobile non si illumina di blu */
 }
 
 .badge-notifica {
@@ -486,15 +499,51 @@ watch(
   filter: brightness(1.1);
 }
 
-@media only screen and (max-width : 800px) {
+@media only screen and (max-width: 800px) {
   #btn-feed {
     bottom: 10px;
-    right : 10px;
+    right: 10px;
     padding: 10px 15px;
     font-size: 0.9rem;
   }
   #sidebar-feed {
     width: 250px;
+  }
+}
+
+/* Stile bottone Home  */
+#btn-torna-home {
+  position: fixed;
+  top: 110px;
+  left: 20px;
+  padding: 10px 15px;
+  font-size: 0.95rem;
+  background-color: #333333;
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 850;
+  transition:
+    transform 0.1s,
+    background-color 0.2s;
+}
+
+#btn-torna-home:hover {
+  background-color: #555555;
+  transform: scale(1.05);
+}
+
+/* Su mobile lo spostiamo in basso a sinistra, opposto al tasto Chat/Feed */
+@media only screen and (max-width: 800px) {
+  #btn-torna-home {
+    top: auto;
+    bottom: 20px;
+    left: 20px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
   }
 }
 </style>

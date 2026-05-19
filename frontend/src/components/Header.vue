@@ -78,15 +78,12 @@ const formattaTempo = (secondi) => {
 
 <template>
   <div id="main-header">
-
     <!-- ------------------------------LOGO------------------------------------------------ -->
 
     <picture id="logo">
-      <source media="(max-width: 800px)" srcset="/logo_sml.png">
-      <img  src="/logo.png" alt="MinesweeperMMO Logo" @click="TornaHome" height="80px" />
+      <source media="(max-width: 800px)" srcset="/logo_sml.png" />
+      <img src="/logo.png" alt="MinesweeperMMO Logo" @click="TornaHome" height="80px" />
     </picture>
-
-
 
     <!-- ------------------------------LETTORE MUSICALE------------------------------------- -->
     <!-- -------------VERSIONE MOBILE----------------- -->
@@ -129,7 +126,7 @@ const formattaTempo = (secondi) => {
       </div>
     </Teleport>
 
-     <!-- -------------VERSIONE STANDARD----------------- -->
+    <!-- -------------VERSIONE STANDARD----------------- -->
     <div id="div_player" v-if="sessione.utente">
       <template v-if="playerMusicale.libreria.length > 0">
         <select @change="gestisciCambioTraccia" class="select-traccia">
@@ -163,14 +160,12 @@ const formattaTempo = (secondi) => {
       </template>
     </div>
 
-
-
     <!-- ------------------------------PROFILO E ICONA------------------------------------- -->
 
     <div v-if="sessione.utente" class="sezione-utente">
       <div id="div_nome_icona" @click="VaiProfilo">
         <label class="icona-profilo">{{ skin.icona }}</label>
-        <span class="nome-profilo" >{{ sessione.utente.username }}</span>
+        <span class="nome-profilo">{{ sessione.utente.username }}</span>
       </div>
       <button @click="EseguiLogout" class="btn-header">LOG OUT</button>
     </div>
@@ -178,7 +173,6 @@ const formattaTempo = (secondi) => {
     <div v-else>
       <button @click="VaiLogin" class="btn-header">ACCEDI / REGISTRATI</button>
     </div>
-  
   </div>
 </template>
 
@@ -198,8 +192,13 @@ const formattaTempo = (secondi) => {
 
 #logo {
   cursor: pointer;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* per fare in modo che se cliccato da mobile non si illumina di blu */
-  background-color:  color-mix(in srgb, var(--bg-color), black 20%);
+  -webkit-tap-highlight-color: rgba(
+    0,
+    0,
+    0,
+    0
+  ); /* per fare in modo che se cliccato da mobile non si illumina di blu */
+  background-color: color-mix(in srgb, var(--bg-color), black 20%);
   padding: 5px 10px;
   border-radius: 10px;
 }
@@ -210,23 +209,38 @@ const formattaTempo = (secondi) => {
 }
 
 #div_nome_icona {
-  margin : 5px 0px 5px;
-  padding: 5px 10px;
-  border-radius: 10px;
-  background-color: color-mix(in srgb, var(--bg-color), white 20%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
-}
-
-.nome-profilo {
-  font-weight: bold;
-  font-size: 1.2rem;
-  color: #333;
-}
-.icona-profilo {
-  font-size: 30px; 
+  padding: 6px 18px 6px 12px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 30px;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
   margin-right: 10px;
 }
 
+#div_nome_icona:hover {
+  background-color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
+}
+
+.icona-profilo {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-right: 0;
+}
+
+.nome-profilo {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #2c3e50;
+  font-family:
+    'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
 
 .btn-header {
   padding: 0.8rem 1.2rem;
@@ -318,15 +332,15 @@ const formattaTempo = (secondi) => {
 /* PER MUSICA MOBILE */
 #btn_musica {
   display: none;
-  width  : 60px;
-  height : 60px;
-  border-radius : 10px;
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
   font-size: 1.5rem;
-  border:none;
-  background-color: color-mix(in srgb, var(--bg-color),white 90%);
+  border: none;
+  background-color: color-mix(in srgb, var(--bg-color), white 90%);
 }
 #btn_musica:hover {
-  background-color: color-mix(in srgb, var(--bg-color),white 75%);
+  background-color: color-mix(in srgb, var(--bg-color), white 75%);
 }
 
 #outer_menuMusica {
@@ -358,8 +372,7 @@ const formattaTempo = (secondi) => {
   width: 100%;
 }
 
-
-@media only screen and (max-width : 800px){
+@media only screen and (max-width: 800px) {
   #div_player {
     display: none;
   }
@@ -371,20 +384,20 @@ const formattaTempo = (secondi) => {
     flex-direction: column;
   }
   .sezione-utente > * {
-    font-size : 12px
+    font-size: 12px;
   }
   #div_nome_icona {
-    margin : 5px 0px 5px;
+    margin: 5px 0px 5px;
   }
   .btn-header {
-    padding : 6px 15px;
-    margin : 5px;
+    padding: 6px 15px;
+    margin: 5px;
   }
   .nome-profilo {
     display: none;
   }
   .icona-profilo {
-    margin : 0;
+    margin: 0;
   }
 }
 </style>
