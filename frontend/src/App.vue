@@ -204,6 +204,13 @@ watch(
   --bg-color: v-bind('skin.temaPrincipale');
   --bg-pattern: v-bind('skin.sfondoURL');
   --icona: v-bind('skin.icona');
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: #222;
+  background-image: var(--bg-pattern);
+  background-repeat: repeat;
+  background-attachment: fixed;
 }
 
 .modal-overlay-alert {

@@ -8,16 +8,12 @@ body {
 }
 
 #main {
-  min-height: calc(100dvh - 80px);
+  flex-grow: 1;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  background-image: var(--bg-pattern);
-  background-repeat: repeat;
-  background-attachment: fixed;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
-  padding: 3vh 0;
+  padding: 20px 0;
 }
 
 .finestra {

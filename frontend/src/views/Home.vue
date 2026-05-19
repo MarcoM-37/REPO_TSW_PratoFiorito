@@ -335,10 +335,8 @@ const storicoFiltrato = computed(() => {
 <style scoped>
 /* Stili del menu principale */
 #menu {
-  margin: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   padding: 2rem 0;
   width: 90%;
   max-width: 500px;
@@ -371,6 +369,7 @@ const storicoFiltrato = computed(() => {
   align-items: center;
   margin: 15px 10%;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .join-box input {
