@@ -397,7 +397,8 @@ const mettiBandierina = (x, y) => {
       <span v-if="notificheChat > 0" class="badge-notifica">{{ notificheChat }}</span>
     </button>
 
-    <Teleport to="body">  <!--  Senza il teleport era impossibile sovrapporsi al bottone del feed -->
+    <Teleport to="body">
+      <!--  Senza il teleport era impossibile sovrapporsi al bottone del feed -->
       <div id="sidebar-chat" :class="{ aperta: chatAperta }">
         <div class="header-chat">
           <h3>Chat Stanza {{ idStanza }}</h3>
@@ -428,7 +429,6 @@ const mettiBandierina = (x, y) => {
         </div>
       </div>
     </Teleport>
-    
   </div>
 
   <!-- ------------------RESOCONTO PARTITA--------------- -->
@@ -493,12 +493,15 @@ const mettiBandierina = (x, y) => {
 }
 
 #zonaPartita {
-  height : fit-content;
+  height: fit-content;
+  width: 95vw;
+  max-width: 800px;
+  box-sizing: border-box;
   margin-top: 2%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem; 
+  padding: 2rem 1rem;
 }
 
 #div_pulsanti {
@@ -520,7 +523,8 @@ const mettiBandierina = (x, y) => {
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
-  max-width: 95vw;
+  max-width: 100%;
+  box-sizing: border-box;
   max-height: 65vh;
   overflow: auto;
 }
@@ -545,8 +549,8 @@ const mettiBandierina = (x, y) => {
   flex-shrink: 0;
 }
 .cella_small {
-  width : 25px;
-  height : 25px;
+  width: 25px;
+  height: 25px;
 }
 
 /* Classe applicata dinamicamente da Vue quando cella.isRevealed è true */
@@ -571,7 +575,12 @@ const mettiBandierina = (x, y) => {
   border: none;
   cursor: pointer;
   z-index: 99;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* per fare in modo che se cliccato da mobile non si illumina di blu */
+  -webkit-tap-highlight-color: rgba(
+    0,
+    0,
+    0,
+    0
+  ); /* per fare in modo che se cliccato da mobile non si illumina di blu */
 }
 
 /* La barra laterale */
@@ -604,10 +613,10 @@ const mettiBandierina = (x, y) => {
 }
 
 #btn-chiudiChat {
-  border : none;
-  padding : 3px;
+  border: none;
+  padding: 3px;
   border-radius: 15px;
-  font-weight : bold;
+  font-weight: bold;
 }
 
 .area-messaggi {
@@ -740,6 +749,8 @@ const mettiBandierina = (x, y) => {
 
 #hud-statistiche {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
   margin-bottom: 15px;
   background-color: rgba(0, 0, 0, 0.1);
@@ -833,7 +844,7 @@ const mettiBandierina = (x, y) => {
   font-weight: bold;
 }
 
-@media only screen and (max-width : 800px) {
+@media only screen and (max-width: 800px) {
   #btn-chat {
     bottom: 60px;
     right: 10px;
@@ -841,8 +852,7 @@ const mettiBandierina = (x, y) => {
     font-size: 1rem;
   }
   #sidebar-chat {
-    width : 250px;
+    width: 250px;
   }
 }
-
 </style>
