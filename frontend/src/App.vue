@@ -546,9 +546,6 @@ watch(
 /* Su mobile lo spostiamo in basso a sinistra, opposto al tasto Chat/Feed */
 @media only screen and (max-width: 800px) {
   #btn-torna-home {
-    top: auto;
-    bottom: 20px;
-    left: 20px;
     padding: 8px 12px;
     font-size: 0.85rem;
   }
