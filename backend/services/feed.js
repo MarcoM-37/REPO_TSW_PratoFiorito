@@ -29,13 +29,20 @@ const creaAnnuncioPersonale = async (io, idDestinatario, tipo, messaggio) => {
 
 // Annuncio a un gruppo specifico
 const creaAnnuncioDiGruppo = async (io, arrayDestinatari, tipo, messaggio) => {
+  if (!arrayDestinatari || arrayDestinatari.length === 0) return;
   try {
-    for (const idUtente of arrayDestinatari) {
-      const query =
-        "INSERT INTO global_feed (tipo_evento, messaggio, id_utente) VALUES ($1, $2, $3) RETURNING *";
-      const res = await db.query(query, [tipo, messaggio, idUtente]);
-      io.to(`utente_${idUtente}`).emit("nuovo_annuncio_global", res.rows[0]);
-    }
+    // Inserimento nel db
+    const values = arrayDestinatari
+      .map((_, i) => `($1, $2, $${i + 3})`)
+      .join(", ");
+    const params = [tipo, messaggio, ...arrayDestinatari];
+    const query = `INSERT INTO global_feed (tipo_evento, messaggio, id_utente) VALUES ${values} RETURNING *`;
+
+    const res = await db.query(query, params);
+
+    // Inviamo l'annuncio a tutte le stanze contemporaneamente
+    const stanzeDestinatari = arrayDestinatari.map((id) => `utente_${id}`);
+    io.to(stanzeDestinatari).emit("nuovo_annuncio_global", res.rows[0]);
   } catch (err) {
     console.error("Errore creaAnnuncioDiGruppo:", err);
   }

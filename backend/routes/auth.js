@@ -15,11 +15,18 @@ router.post("/signup", async (req, res) => {
       .status(400)
       .json({ success: false, error: "Tutti i campi sono obbligatori" });
   }
-  if (password.lenght < 8) {
+  if (password.length < 8) {
     return res.status(400).json({
       success: false,
       error: "La password deve contenere almeno 8 caratteri",
     });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Formato email non valido" });
   }
 
   try {

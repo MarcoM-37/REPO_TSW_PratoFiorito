@@ -71,13 +71,16 @@ router.get("/me", auth, async (req, res) => {
     const idUser = req.user.id;
 
     const query = `
-           SELECT username, email, valuta,
-           (SELECT COUNT(*) FROM gioca_in WHERE id_utente = $1) as partite_giocate,
-           (SELECT COUNT(*) FROM gioca_in g JOIN partite p ON g.id_partita = p.id_partita WHERE g.id_utente = $1 AND p.stato = 'vinta') as vittorie_totali,
-           (SELECT COALESCE(SUM(punteggio_partita), 0) FROM gioca_in WHERE id_utente = $1) as punti_totali
-           FROM utenti
-           WHERE id_utente = $1
-        `;
+       SELECT u.username, u.email, u.valuta,
+         COUNT(g.id_partita) as partite_giocate,
+         COALESCE(SUM(CASE WHEN p.stato = 'vinta' THEN 1 ELSE 0 END), 0) as vittorie_totali,
+         COALESCE(SUM(g.punteggio_partita), 0) as punti_totali
+       FROM utenti u
+       LEFT JOIN gioca_in g ON u.id_utente = g.id_utente
+       LEFT JOIN partite p ON g.id_partita = p.id_partita
+       WHERE u.id_utente = $1
+       GROUP BY u.id_utente, u.username, u.email, u.valuta
+    `;
 
     const result = await db.query(query, [idUser]);
 

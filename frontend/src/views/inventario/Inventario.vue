@@ -72,7 +72,7 @@ onMounted(caricaOggettiAcquistati) //per caricare la lista degli oggetti acquist
   <div id="main">
     <Loading v-if="caricamento" messaggio="Caricamento inventario..."></Loading>
 
-    <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaClassifica"></Errore>
+    <Errore v-else-if="errore" :messaggio="errore" @riprova="caricaOggettiAcquistati"></Errore>
 
     <div v-else id="finestra_shop" class="finestra">
       <!-- -----------------------TEMI--------------- -->

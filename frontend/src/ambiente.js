@@ -1,9 +1,8 @@
 import { reactive } from 'vue'
 
 // Recuperiamo l'aspetto salvato dal disco (se esiste)
-const skinSalvata = localStorage.getItem('skin_campo_minato')
-  ? JSON.parse(localStorage.getItem('skin_campo_minato'))
-  : null
+const _rawSkin = localStorage.getItem('skin_campo_minato')
+const skinSalvata = _rawSkin ? JSON.parse(_rawSkin) : null
 
 export const skin = reactive({
   temaPrincipale: skinSalvata?.tema || '#42b9af',

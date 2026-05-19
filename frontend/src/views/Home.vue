@@ -75,7 +75,7 @@ const VaiClassifica = () => {
 // Eseguita quando l'utente clicca "Inizia a Giocare!" nel modale
 const ConfermaCreazione = () => {
   // 1. Inventiamo un numero di stanza casuale
-  const idNuovaStanza = Math.floor(Math.random() * 10000)
+  const idNuovaStanza = Math.floor(Math.random() * 900000) + 100000
 
   // 2. Usiamo il router per cambiare pagina.
   // Passiamo un oggetto per poter allegare i dati scelti nel modale.

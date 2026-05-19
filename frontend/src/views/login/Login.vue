@@ -69,8 +69,6 @@ const gestisciLogin = async () => {
 }
 </script>
 
-<style setup></style>
-
 <template>
   <div id="main">
     <Loading v-if="caricamento" messaggio="Login in corso..."></Loading>
@@ -108,7 +106,7 @@ const gestisciLogin = async () => {
   padding: 30px;
   border-radius: 12px;
   box-sizing: border-box;
-  height : fit-content;
+  height: fit-content;
 }
 
 #div_email,

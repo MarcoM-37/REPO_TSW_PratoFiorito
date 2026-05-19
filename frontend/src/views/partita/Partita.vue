@@ -159,20 +159,11 @@ onMounted(() => {
     }, 1000)
   })
 
-  socket.on('storico_chat', (messaggiPassati) => {
-    storicoChat.value = messaggiPassati
-  })
-
-  socket.on('nuovo_messaggio_chat', (messaggio) => {
-    storicoChat.value.push(messaggio)
-  })
-
   // Ascolta lo storico quando si entra
   socket.on('storico_chat', (messaggiPassati) => {
     storicoChat.value = messaggiPassati
   })
 
-  socket.off('nuovo_messaggio_chat') // Uccide eventuali cloni
   // Ricezione di un singolo nuovo messaggio
   socket.on('nuovo_messaggio_chat', (messaggio) => {
     storicoChat.value.push(messaggio)
@@ -304,10 +295,10 @@ const mettiBandierina = (x, y) => {
   if (!sessione.utente) return
   if (griglia.value[y][x].isRevealed) return
   sfx.play('bandierina.wav')
-  // Aumentiamo o diminuiamo il contatore locale (se la cella non è già scoperta)
-  if (!griglia.value[y][x].isRevealed) {
-    griglia.value[y][x].isFlagged ? bandierinePiazzate.value-- : bandierinePiazzate.value++
-  }
+
+  // Aumentiamo o diminuiamo il contatore locale
+  griglia.value[y][x].isFlagged ? bandierinePiazzate.value-- : bandierinePiazzate.value++
+
   socket.emit('mossa_utente', {
     idPartita: idStanza,
     x: x,

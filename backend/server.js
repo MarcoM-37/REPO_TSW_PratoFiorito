@@ -6,6 +6,7 @@ const path = require("path");
 const bcrypt = require("bcrypt"); // Libreria per la sicurezza delle password
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 const {
   creaAnnuncioGlobale,
   creaAnnuncioPersonale,
@@ -20,7 +21,7 @@ const authMidWare = require("./middleware/auth");
 const app = express();
 
 const corsOptions = {
-  origin: "*",
+  origin: ["http://localhost:5173", "https://minesweepermmo.onrender.com"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
@@ -54,14 +55,18 @@ io.use((socket, next) => {
   }
 });
 
-// --- LOGICA SOCKET.IO (GIOCO) ---
-
 // Questa variabile terrà in memoria (RAM) lo stato di tutte le partite in corso.
 const activeGames = {};
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success: false, error: "Troppi tentativi, riprova più tardi." },
+});
+
 // Rotte per l'autenticazione
 const authRoutes = require("./routes/auth");
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 
 const statsRoutes = require("./routes/stats");
 app.use("/api/stats", statsRoutes);
@@ -897,7 +902,7 @@ io.on("connection", (socket) => {
 });
 
 // Avviamo il server sulla porta 3000
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server Campo Minato in ascolto sulla porta ${PORT}`);
 });

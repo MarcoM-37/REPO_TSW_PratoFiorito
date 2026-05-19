@@ -19,25 +19,6 @@ const EseguiLogout = () => {
   router.push('/')
 }
 
-// Funzione che recupera l'inventario per sapere che musica possiede l'utente
-const caricaLibreriaMusicale = async () => {
-  if (!sessione.utente) return
-  const token = localStorage.getItem('token_campo_minato')
-  if (!token) return
-
-  try {
-    const res = await fetch(`${API_URL}/api/shop/mio`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) {
-      const dati = await res.json()
-      playerMusicale.impostaLibreria(dati.inventario)
-    }
-  } catch (err) {
-    console.error('Errore caricamento libreria musicale', err)
-  }
-}
-
 // Carichiamo la libreria all'avvio e se l'utente cambia
 onMounted(() => {
   playerMusicale.aggiornaLibreria() // Chiama la funzione centralizzata
