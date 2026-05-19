@@ -15,6 +15,7 @@ body {
   place-items: center;
   box-sizing: border-box;
   padding: 20px 0;
+  overflow: hidden;
 }
 
 .finestra {
@@ -22,12 +23,12 @@ body {
   border-radius: 10px;
   background-color: var(--bg-color);
   border: 2px solid color-mix(in srgb, var(--bg-color), white 10%);
-
   max-height: 85dvh;
   max-width: 95vw;
   overflow-x: hidden;
-
   box-sizing: border-box;
   overflow-y: auto;
   scrollbar-color: color-mix(in srgb, var(--bg-color), black 50%) var(--bg-color);
+  position: relative;
+  bottom: 10px;
 }
